@@ -5,5 +5,5 @@ export const config = {
   supabaseUrl: 'https://kckynijiimoztaotkybk.supabase.co',
   supabaseAnonKey: 'your-supabase-anon-key',
   openrouterKey: 'sk-or-v1-your-openrouter-key',
-  openrouterModel: 'anthropic/claude-sonnet-4',
+  openrouterModel: 'openai/gpt-4o',
 };
