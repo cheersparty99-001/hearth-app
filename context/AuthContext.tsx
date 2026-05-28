@@ -51,21 +51,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
     });
     if (error) return { error: error.message };
-
-    const newUser = data.user;
-    if (newUser) {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({ id: newUser.id, name: email.split("@")[0] }, { onConflict: "id" });
-      if (profileError) {
-        return { error: profileError.message };
-      }
-    }
     return { error: null };
   };
 
