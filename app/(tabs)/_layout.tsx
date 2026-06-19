@@ -39,7 +39,7 @@ export default function TabsLayout() {
           paddingTop: 8,
           paddingBottom: 10,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "500" },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: "500", fontFamily: "Inter_500Medium" },
         tabBarActiveTintColor: Colors.accent.primary,
         tabBarInactiveTintColor: Colors.text.muted,
       }}

@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   View,
@@ -16,6 +17,16 @@ import { QUESTIONS, ChoiceId } from "../../constants/questions";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { generateInsight } from "../../lib/openrouter";
+
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+const CHOICE_ICONS: Record<number, Record<ChoiceId, IoniconName>> = {
+  1: { a: "briefcase", b: "home", c: "scale", d: "hourglass" },
+  2: { a: "sunny", b: "home-outline", c: "chatbubble", d: "refresh" },
+  3: { a: "trending-up", b: "walk", c: "megaphone", d: "search" },
+  4: { a: "heart", b: "water", c: "people", d: "cloud" },
+  5: { a: "exit", b: "eye", c: "leaf", d: "chatbox" },
+};
 
 export default function Crossroads() {
   const router = useRouter();
@@ -118,6 +129,7 @@ export default function Crossroads() {
 
         {question.choices.map((c) => {
           const isSel = selected === c.id;
+          const iconName = CHOICE_ICONS[question.id]?.[c.id] ?? "ellipse-outline";
           return (
             <Pressable
               key={c.id}
@@ -125,7 +137,7 @@ export default function Crossroads() {
               onPress={() => onSelect(c.id)}
             >
               <View style={styles.iconCircle}>
-                <Text style={styles.iconEmoji}>{c.icon}</Text>
+                <Ionicons name={iconName} size={22} color={Colors.accent.primary} />
               </View>
               <View style={styles.choiceBody}>
                 <Text style={styles.choiceTitle}>{c.title}</Text>
@@ -175,11 +187,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "400",
     marginBottom: 4,
+    fontFamily: "Lora_700Bold",
   },
   progressLabel: {
     color: Colors.text.muted,
     fontSize: 12,
     marginBottom: 10,
+    fontFamily: "Inter_400Regular",
   },
   progressBg: {
     height: 4,
@@ -198,6 +212,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     fontWeight: "600",
     marginBottom: 14,
+    fontFamily: "Inter_500Medium",
   },
   scenarioCard: {
     backgroundColor: Colors.bg.card,
@@ -213,17 +228,20 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 2,
     marginBottom: 10,
+    fontFamily: "Inter_500Medium",
   },
   scenarioText: {
     color: Colors.text.primary,
     fontSize: 17,
     lineHeight: 26,
     marginBottom: 12,
+    fontFamily: "Lora_400Regular",
   },
   questionText: {
     color: Colors.text.muted,
     fontSize: 14,
     fontStyle: "italic",
+    fontFamily: "Inter_400Regular",
   },
   choice: {
     backgroundColor: Colors.bg.card,
@@ -249,15 +267,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  iconEmoji: { fontSize: 22 },
   choiceBody: { flex: 1 },
   choiceTitle: {
     color: Colors.text.primary,
     fontSize: 15,
     fontWeight: "600",
     marginBottom: 2,
+    fontFamily: "Inter_600SemiBold",
   },
-  choiceDesc: { color: Colors.text.muted, fontSize: 13 },
+  choiceDesc: { color: Colors.text.muted, fontSize: 13, fontFamily: "Inter_400Regular" },
   radio: {
     width: 18,
     height: 18,
@@ -277,7 +295,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  backText: { color: Colors.text.muted, fontWeight: "500" },
+  backText: { color: Colors.text.muted, fontWeight: "500", fontFamily: "Inter_500Medium" },
   continueBtn: {
     backgroundColor: Colors.accent.primary,
     paddingVertical: 16,
@@ -286,5 +304,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   continueDisabled: { opacity: 0.5 },
-  continueText: { color: "#FFFFFF", fontWeight: "600", fontSize: 15 },
+  continueText: { color: "#FFFFFF", fontWeight: "600", fontSize: 15, fontFamily: "Inter_600SemiBold" },
 });

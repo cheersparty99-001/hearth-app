@@ -136,7 +136,7 @@ export default function Chat() {
       <StatusBar style="light" />
       <View style={styles.header}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>🔥</Text>
+          <Ionicons name="flame" size={18} color={Colors.accent.primary} />
         </View>
         <View>
           <Text style={styles.name}>Ember</Text>
@@ -249,13 +249,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontSize: 18 },
   name: {
     color: Colors.text.primary,
     fontSize: 16,
     fontWeight: "600",
+    fontFamily: "Lora_600SemiBold",
   },
-  role: { color: Colors.text.muted, fontSize: 12 },
+  role: { color: Colors.text.muted, fontSize: 12, fontFamily: "Inter_400Regular" },
   body: { flex: 1 },
   list: { padding: 16, paddingBottom: 24 },
   bubbleRow: { flexDirection: "row", marginBottom: 10 },
@@ -277,8 +277,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     borderBottomLeftRadius: 4,
   },
-  bubbleUserText: { color: "#FFFFFF", fontSize: 15, lineHeight: 22 },
-  bubbleEmberText: { color: Colors.text.primary, fontSize: 15, lineHeight: 22 },
+  bubbleUserText: { color: "#FFFFFF", fontSize: 15, lineHeight: 22, fontFamily: "Inter_400Regular" },
+  bubbleEmberText: { color: Colors.text.primary, fontSize: 15, lineHeight: 22, fontFamily: "Inter_400Regular" },
   suggestions: { marginTop: 14, gap: 8 },
   suggestion: {
     backgroundColor: Colors.bg.card,
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
   },
-  suggestionText: { color: Colors.text.secondary, fontSize: 14 },
+  suggestionText: { color: Colors.text.secondary, fontSize: 14, fontFamily: "Inter_400Regular" },
   inputRow: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -307,6 +307,7 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: 15,
     maxHeight: 120,
+    fontFamily: "Inter_400Regular",
   },
   sendBtn: {
     width: 42,

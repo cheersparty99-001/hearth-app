@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "400",
     marginBottom: 20,
+    fontFamily: "Lora_700Bold",
   },
   card: {
     backgroundColor: Colors.bg.card,
@@ -134,14 +135,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "500",
     marginBottom: 4,
+    fontFamily: "Lora_600SemiBold",
   },
-  email: { color: Colors.text.muted, fontSize: 13 },
+  email: { color: Colors.text.muted, fontSize: 13, fontFamily: "Inter_400Regular" },
   sectionLabel: {
     color: Colors.text.muted,
     fontSize: 11,
     letterSpacing: 2,
     fontWeight: "600",
     marginBottom: 12,
+    fontFamily: "Inter_500Medium",
   },
   statsRow: {
     flexDirection: "row",
@@ -162,13 +165,15 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "500",
     marginBottom: 4,
+    fontFamily: "Lora_700Bold",
   },
-  statLabel: { color: Colors.text.muted, fontSize: 12 },
+  statLabel: { color: Colors.text.muted, fontSize: 12, fontFamily: "Inter_400Regular" },
   aboutText: {
     color: Colors.text.secondary,
     fontSize: 14,
     lineHeight: 22,
     textAlign: "center",
+    fontFamily: "Inter_400Regular",
   },
   signOutBtn: {
     paddingVertical: 16,
@@ -179,5 +184,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
-  signOutText: { color: Colors.text.muted, fontSize: 15, fontWeight: "500" },
+  signOutText: { color: Colors.text.muted, fontSize: 15, fontWeight: "500", fontFamily: "Inter_500Medium" },
 });

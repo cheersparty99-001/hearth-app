@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useRef } from "react";
 import {
   View,
@@ -53,7 +54,7 @@ export default function SplashScreen() {
     <View style={styles.root}>
       <StatusBar style="light" />
       <ImageBackground
-        source={undefined}
+        source={require("../assets/images/splash-bg.png")}
         style={styles.bg}
         imageStyle={styles.bgImage}
       >
@@ -68,7 +69,9 @@ export default function SplashScreen() {
               { opacity: fade, transform: [{ translateY: lift }] },
             ]}
           >
-            <Text style={styles.flame}>🔥</Text>
+            <View style={styles.flame}>
+              <Ionicons name="flame" size={80} color={Colors.accent.primary} />
+            </View>
             <Text style={styles.title}>Hearth</Text>
             <Text style={styles.subtitle}>
               A space for reflection, growth, and understanding
@@ -95,13 +98,14 @@ const styles = StyleSheet.create({
   bgImage: { opacity: 0.4 },
   safe: { flex: 1, paddingHorizontal: 24, justifyContent: "space-between" },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
-  flame: { fontSize: 80, marginBottom: 12 },
+  flame: { marginBottom: 12 },
   title: {
     color: Colors.text.primary,
     fontSize: 44,
     fontWeight: "300",
     letterSpacing: 2,
     marginBottom: 12,
+    fontFamily: "Lora_400Regular",
   },
   subtitle: {
     color: Colors.text.muted,
@@ -109,6 +113,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     maxWidth: 280,
     lineHeight: 22,
+    fontFamily: "Inter_400Regular",
   },
   bottom: { paddingBottom: 24, alignItems: "center" },
   cta: {
@@ -127,11 +132,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     letterSpacing: 0.5,
+    fontFamily: "Inter_600SemiBold",
   },
   footer: {
     color: Colors.text.muted,
     fontSize: 12,
     marginTop: 18,
     letterSpacing: 1,
+    fontFamily: "Inter_500Medium",
   },
 });

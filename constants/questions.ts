@@ -25,25 +25,25 @@ export const QUESTIONS: Question[] = [
     choices: [
       {
         id: "a",
-        icon: "💼",
+        icon: "briefcase",
         title: "Embrace Growth",
         description: "Take the leap — this opportunity calls to me.",
       },
       {
         id: "b",
-        icon: "🏡",
+        icon: "home",
         title: "Honor Connection",
         description: "Stay close — the people I love come first.",
       },
       {
         id: "c",
-        icon: "⚖️",
+        icon: "scale",
         title: "Find Balance",
         description: "Negotiate something that honors both.",
       },
       {
         id: "d",
-        icon: "⏳",
+        icon: "time",
         title: "Take More Time",
         description: "I need more information before deciding.",
       },
@@ -58,25 +58,25 @@ export const QUESTIONS: Question[] = [
     choices: [
       {
         id: "a",
-        icon: "🌅",
+        icon: "sunny",
         title: "Take the Leap",
         description: "Now or never — I choose freedom.",
       },
       {
         id: "b",
-        icon: "🏠",
+        icon: "home",
         title: "Stay for Now",
         description: "Not the right time — security matters.",
       },
       {
         id: "c",
-        icon: "💬",
+        icon: "chatbubble",
         title: "Have the Talk",
         description: "Discuss it openly with the people involved.",
       },
       {
         id: "d",
-        icon: "🔄",
+        icon: "refresh",
         title: "Plan Transition",
         description: "Set a date and prepare carefully.",
       },
@@ -91,25 +91,25 @@ export const QUESTIONS: Question[] = [
     choices: [
       {
         id: "a",
-        icon: "📈",
+        icon: "trending-up",
         title: "Take Promotion",
         description: "I earned this — I'll make it work.",
       },
       {
         id: "b",
-        icon: "🚶",
+        icon: "walk",
         title: "Walk Away",
         description: "Stay put — meaning matters more than title.",
       },
       {
         id: "c",
-        icon: "🗣️",
+        icon: "megaphone",
         title: "Speak Up",
         description: "Voice my disagreement and reshape the role.",
       },
       {
         id: "d",
-        icon: "🔍",
+        icon: "search",
         title: "Understand First",
         description: "Ask questions before I commit.",
       },
@@ -124,25 +124,25 @@ export const QUESTIONS: Question[] = [
     choices: [
       {
         id: "a",
-        icon: "💚",
+        icon: "heart",
         title: "Forgive Fully",
         description: "Rebuild — our bond is worth it.",
       },
       {
         id: "b",
-        icon: "🌊",
+        icon: "water",
         title: "Allow Distance",
         description: "Things have changed — I let it go.",
       },
       {
         id: "c",
-        icon: "🤝",
+        icon: "handshake",
         title: "Forgive Slowly",
         description: "I need time to rebuild trust.",
       },
       {
         id: "d",
-        icon: "💭",
+        icon: "cloud",
         title: "Reflect First",
         description: "I'm not ready to decide yet.",
       },
@@ -157,25 +157,25 @@ export const QUESTIONS: Question[] = [
     choices: [
       {
         id: "a",
-        icon: "🚪",
+        icon: "exit",
         title: "Leave Something",
         description: "I've stayed too long in a place I've outgrown.",
       },
       {
         id: "b",
-        icon: "👁️",
+        icon: "eye",
         title: "Be Seen",
         description: "I'd let someone truly see me.",
       },
       {
         id: "c",
-        icon: "🌱",
+        icon: "leaf",
         title: "Start Something",
         description: "There's something I've been afraid to start.",
       },
       {
         id: "d",
-        icon: "🤫",
+        icon: "mic-off",
         title: "Say Something",
         description: "There are words I've never said aloud.",
       },

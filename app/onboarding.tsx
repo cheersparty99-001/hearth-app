@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -93,7 +94,7 @@ export default function Onboarding() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={[styles.slide, { width }]}>
-          <Text style={styles.slideIcon}>🌲</Text>
+          <Ionicons name="trail-sign" size={72} color={Colors.accent.primary} style={{ marginBottom: 24 }} />
           <Text style={styles.slideTitle}>Discover Your Path</Text>
           <Text style={styles.slideBody}>
             Answer five life scenarios to reveal your inner patterns. Quiet
@@ -105,7 +106,7 @@ export default function Onboarding() {
         </View>
 
         <View style={[styles.slide, { width }]}>
-          <Text style={styles.slideIcon}>🔥</Text>
+          <Ionicons name="flame" size={72} color={Colors.accent.primary} style={{ marginBottom: 24 }} />
           <Text style={styles.slideTitle}>Meet Ember</Text>
           <Text style={styles.slideBody}>
             Your always-available companion for reflection and support. Calm,
@@ -120,7 +121,7 @@ export default function Onboarding() {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={[styles.slide, { width }]}
         >
-          <Text style={styles.slideIcon}>✨</Text>
+          <Ionicons name="sparkles" size={72} color={Colors.accent.primary} style={{ marginBottom: 24 }} />
           <Text style={styles.slideTitle}>
             {mode === "signup" ? "Create Account" : "Welcome Back"}
           </Text>
@@ -196,20 +197,20 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
   dotActive: { backgroundColor: Colors.accent.primary, width: 22 },
-  skip: { color: Colors.text.muted, fontSize: 14, width: 50, textAlign: "right" },
+  skip: { color: Colors.text.muted, fontSize: 14, width: 50, textAlign: "right", fontFamily: "Inter_400Regular" },
   slide: {
     flex: 1,
     paddingHorizontal: 24,
     alignItems: "center",
     justifyContent: "center",
   },
-  slideIcon: { fontSize: 72, marginBottom: 24 },
   slideTitle: {
     color: Colors.text.primary,
     fontSize: 30,
     fontWeight: "400",
     marginBottom: 16,
     textAlign: "center",
+    fontFamily: "Lora_700Bold",
   },
   slideBody: {
     color: Colors.text.muted,
@@ -218,6 +219,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     maxWidth: 320,
     marginBottom: 32,
+    fontFamily: "Inter_400Regular",
   },
   nextBtn: {
     backgroundColor: Colors.accent.primary,
@@ -226,7 +228,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginTop: 16,
   },
-  nextBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
+  nextBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600", fontFamily: "Inter_600SemiBold" },
   form: { width: "100%", maxWidth: 360 },
   input: {
     backgroundColor: Colors.bg.card,
@@ -238,6 +240,7 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     marginBottom: 12,
     fontSize: 15,
+    fontFamily: "Inter_400Regular",
   },
   cta: {
     backgroundColor: Colors.accent.primary,
@@ -247,11 +250,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   ctaDisabled: { opacity: 0.7 },
-  ctaText: { color: "#FFFFFF", fontWeight: "600", fontSize: 15 },
+  ctaText: { color: "#FFFFFF", fontWeight: "600", fontSize: 15, fontFamily: "Inter_600SemiBold" },
   toggle: {
     color: Colors.accent.light,
     fontSize: 14,
     textAlign: "center",
     marginTop: 16,
+    fontFamily: "Inter_400Regular",
   },
 });

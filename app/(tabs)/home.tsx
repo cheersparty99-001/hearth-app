@@ -49,7 +49,7 @@ export default function Home() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <View style={styles.brand}>
-            <Text style={styles.flame}>🔥</Text>
+            <Ionicons name="flame" size={22} color={Colors.accent.primary} />
             <Text style={styles.brandText}>Hearth</Text>
           </View>
           <Pressable onPress={signOut} hitSlop={10}>
@@ -74,7 +74,7 @@ export default function Home() {
           style={styles.featureCard}
           onPress={() => router.push("/(tabs)/crossroads")}
         >
-          <Text style={styles.featureIcon}>🌿</Text>
+          <Ionicons name="trail-sign" size={28} color={Colors.accent.primary} />
           <View style={styles.featureBody}>
             <Text style={styles.featureTitle}>Life Crossroads</Text>
             <Text style={styles.featureDesc}>
@@ -88,7 +88,7 @@ export default function Home() {
           style={styles.featureCard}
           onPress={() => router.push("/(tabs)/chat")}
         >
-          <Text style={styles.featureIcon}>🔥</Text>
+          <Ionicons name="flame" size={28} color={Colors.accent.primary} />
           <View style={styles.featureBody}>
             <Text style={styles.featureTitle}>Ember</Text>
             <Text style={styles.featureDesc}>Your companion for reflection.</Text>
@@ -97,7 +97,7 @@ export default function Home() {
         </Pressable>
 
         <View style={[styles.featureCard, styles.locked]}>
-          <Text style={[styles.featureIcon, { opacity: 0.7 }]}>🌲</Text>
+          <Ionicons name="leaf" size={28} color={Colors.text.muted} />
           <View style={styles.featureBody}>
             <Text style={[styles.featureTitle, { opacity: 0.8 }]}>
               Forest Meditation
@@ -122,24 +122,26 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   brand: { flexDirection: "row", alignItems: "center", gap: 8 },
-  flame: { fontSize: 22 },
   brandText: {
     color: Colors.text.primary,
     fontSize: 20,
     fontWeight: "500",
     letterSpacing: 1,
+    fontFamily: "Lora_700Bold",
   },
-  signOut: { color: Colors.text.muted, fontSize: 13 },
+  signOut: { color: Colors.text.muted, fontSize: 13, fontFamily: "Inter_400Regular" },
   greeting: {
     color: Colors.text.primary,
     fontSize: 26,
     fontWeight: "400",
     marginBottom: 4,
+    fontFamily: "Lora_700Bold",
   },
   welcome: {
     color: Colors.text.muted,
     fontSize: 14,
     marginBottom: 24,
+    fontFamily: "Inter_400Regular",
   },
   card: {
     backgroundColor: Colors.bg.card,
@@ -160,6 +162,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 2,
     marginBottom: 12,
+    fontFamily: "Inter_500Medium",
   },
   quote: {
     color: Colors.text.primary,
@@ -167,14 +170,16 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     lineHeight: 26,
     marginBottom: 12,
+    fontFamily: "Lora_400Regular",
   },
-  author: { color: Colors.text.muted, fontSize: 13 },
+  author: { color: Colors.text.muted, fontSize: 13, fontFamily: "Inter_400Regular" },
   sectionLabel: {
     color: Colors.text.muted,
     fontSize: 11,
     fontWeight: "600",
     letterSpacing: 2,
     marginBottom: 12,
+    fontFamily: "Inter_500Medium",
   },
   featureCard: {
     backgroundColor: Colors.bg.card,
@@ -188,13 +193,13 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   locked: { opacity: 0.65 },
-  featureIcon: { fontSize: 30 },
   featureBody: { flex: 1 },
   featureTitle: {
     color: Colors.text.primary,
     fontSize: 16,
     fontWeight: "500",
     marginBottom: 4,
+    fontFamily: "Lora_600SemiBold",
   },
-  featureDesc: { color: Colors.text.muted, fontSize: 13 },
+  featureDesc: { color: Colors.text.muted, fontSize: 13, fontFamily: "Inter_400Regular" },
 });

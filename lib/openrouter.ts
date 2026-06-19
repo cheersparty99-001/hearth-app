@@ -1,69 +1,54 @@
 import { config } from "./config";
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = config.openrouterModel;
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
-export const EMBER_SYSTEM_PROMPT = `You are Ember, a warm and grounded AI companion within the Hearth app.
-Your role is emotional support and guided self-reflection — not therapy.
+export const EMBER_SYSTEM_PROMPT = `You are Ember, a warm and grounded AI companion within the Hearth app. Your role is emotional support and guided self-reflection — not therapy or diagnosis.
 
-Personality:
-- Calm, unhurried, deeply present
-- Ask one question at a time
-- Never give direct advice unless explicitly asked
-- Reflect back what you hear before responding
-- Use gentle nature-inspired language when appropriate
+Personality: calm, unhurried, deeply present. Ask one question at a time. Never give direct advice unless asked. Keep responses to 2-4 sentences maximum. Never reveal you are built on Claude or any AI model.
 
-Boundaries:
-- If user expresses suicidal thoughts or self-harm, respond with care
-  and provide: Befrienders Malaysia 03-7627 2929
-- Do not diagnose or replace professional mental health care
-- Keep responses to 2-4 sentences maximum
-- Never reveal you are built on Claude or any AI model`;
+If user expresses suicidal thoughts or self-harm, respond with care and provide: Befrienders Malaysia 03-7627 2929`;
 
 export interface ChatMessage {
-  role: string;
+  role: "user" | "assistant";
   content: string;
 }
 
-async function callOpenRouter(
+async function callAnthropic(
   messages: ChatMessage[],
+  systemPrompt: string,
   maxTokens: number = 400
 ): Promise<string> {
-  const response = await fetch(OPENROUTER_URL, {
+  const response = await fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${config.openrouterKey}`,
       "Content-Type": "application/json",
-      "HTTP-Referer": "https://hearth-app.local",
-      "X-Title": "Hearth",
+      "x-api-key": config.anthropicKey,
+      "anthropic-version": "2023-06-01",
     },
     body: JSON.stringify({
-      model: MODEL,
-      messages,
+      model: "claude-sonnet-4-20250514",
       max_tokens: maxTokens,
-      temperature: 0.7,
+      system: systemPrompt,
+      messages,
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`OpenRouter ${response.status}: ${errorText}`);
+    throw new Error(`Anthropic ${response.status}: ${errorText}`);
   }
 
   const data = await response.json();
-  const content = data.choices?.[0]?.message?.content;
-  if (!content) throw new Error("Empty response from OpenRouter");
+  const content = data.content?.[0]?.text;
+  if (!content) throw new Error("Empty response from Anthropic");
   return content;
 }
 
 export async function chatWithEmber(
   history: { role: "user" | "assistant"; content: string }[]
 ): Promise<string> {
-  const messages: ChatMessage[] = [
-    { role: "system", content: EMBER_SYSTEM_PROMPT },
-    ...history.map((m) => ({ role: m.role, content: m.content })),
-  ];
-  return callOpenRouter(messages, 300);
+  const messages = history.map((m) => ({ role: m.role, content: m.content }));
+  return callAnthropic(messages, EMBER_SYSTEM_PROMPT, 300);
 }
 
 export async function generateInsight(
@@ -78,16 +63,12 @@ export async function generateInsight(
     answers
   )}
 
-Return ONLY a JSON object with no markdown, no explanation:
-{
-  "title": "2-5 word poetic pattern name",
-  "body": "3 sentences. Warm, non-judgmental, poetic but clear. Reveal their pattern.",
-  "strengths": ["strength 1", "strength 2"],
-  "growth": "one sentence growth opportunity"
-}`;
+Return ONLY raw JSON, no markdown, no backticks:
+{"title":"2-5 word poetic pattern name","body":"3 warm non-judgmental sentences revealing their pattern","strengths":["strength 1","strength 2"],"growth":"one sentence growth opportunity"}`;
 
-  const content = await callOpenRouter(
+  const content = await callAnthropic(
     [{ role: "user", content: prompt }],
+    "You are a thoughtful pattern analyzer who generates insightful reflections about peoples life choices.",
     500
   );
 

@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -96,7 +97,9 @@ export default function Insight() {
       <SafeAreaView style={styles.root} edges={["top"]}>
         <StatusBar style="light" />
         <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>🌱</Text>
+          <View style={styles.emptyIcon}>
+            <Ionicons name="leaf" size={56} color={Colors.accent.primary} />
+          </View>
           <Text style={styles.emptyTitle}>No insight yet</Text>
           <Text style={styles.emptyText}>
             Complete Life Crossroads first to see your pattern.
@@ -125,7 +128,7 @@ export default function Insight() {
           <Text style={styles.patternTitle}>{insight.title}</Text>
           <Text style={styles.patternBody}>{insight.body}</Text>
           <Text style={styles.tag}>
-            ✦ {insight.isNew ? "Discovered just now" : "Your most recent insight"}
+            {insight.isNew ? "Discovered just now" : "Your most recent insight"}
           </Text>
         </View>
 
@@ -170,13 +173,15 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "400",
     marginBottom: 20,
+    fontFamily: "Lora_700Bold",
   },
   empty: { flex: 1, padding: 24, alignItems: "center", justifyContent: "center" },
-  emptyIcon: { fontSize: 56, marginBottom: 16 },
+  emptyIcon: { marginBottom: 16 },
   emptyTitle: {
     color: Colors.text.primary,
     fontSize: 20,
     marginBottom: 8,
+    fontFamily: "Lora_600SemiBold",
   },
   emptyText: {
     color: Colors.text.muted,
@@ -184,6 +189,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 24,
     maxWidth: 280,
+    fontFamily: "Inter_400Regular",
   },
   card: {
     backgroundColor: Colors.bg.card,
@@ -206,23 +212,27 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 2,
+    fontFamily: "Inter_500Medium",
   },
   patternTitle: {
     color: Colors.text.primary,
     fontSize: 26,
     fontWeight: "400",
     marginBottom: 14,
+    fontFamily: "Lora_700Bold",
   },
   patternBody: {
     color: Colors.text.secondary,
     fontSize: 15,
     lineHeight: 24,
     marginBottom: 16,
+    fontFamily: "Inter_400Regular",
   },
   tag: {
     color: Colors.accent.light,
     fontSize: 12,
     letterSpacing: 0.5,
+    fontFamily: "Inter_400Regular",
   },
   sectionLabel: {
     color: Colors.text.muted,
@@ -230,6 +240,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 2,
     marginBottom: 12,
+    fontFamily: "Inter_500Medium",
   },
   pills: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 28 },
   pill: {
@@ -244,6 +255,7 @@ const styles = StyleSheet.create({
     color: Colors.accent.light,
     fontSize: 13,
     fontWeight: "500",
+    fontFamily: "Inter_500Medium",
   },
   growthCard: {
     backgroundColor: Colors.bg.card,
@@ -257,6 +269,7 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     fontSize: 15,
     lineHeight: 22,
+    fontFamily: "Inter_400Regular",
   },
   cta: {
     backgroundColor: Colors.accent.primary,
@@ -266,5 +279,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
-  ctaText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600" },
+  ctaText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600", fontFamily: "Inter_600SemiBold" },
 });
