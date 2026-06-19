@@ -29,6 +29,15 @@ const ICON_MAP: Record<ChoiceIcon, IoniconName> = {
   shield: "shield",
 };
 
+const SCENARIO_IMAGES: Record<number, any> = {
+  1: require("../../assets/images/scenario-1.png"),
+  2: require("../../assets/images/scenario-2.png"),
+  3: require("../../assets/images/scenario-3.png"),
+  4: require("../../assets/images/scenario-4.png"),
+  5: require("../../assets/images/scenario-5.png"),
+  6: require("../../assets/images/scenario-6.png"),
+};
+
 export default function Crossroads() {
   const router = useRouter();
   const { user } = useAuth();
@@ -138,8 +147,14 @@ export default function Crossroads() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.heroWrap}>
+            <LinearGradient
+              colors={[Colors.bg.secondary, Colors.accent.primary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
             <ImageBackground
-              source={require("../../assets/images/scenario-bg.png")}
+              source={SCENARIO_IMAGES[question.id] ?? SCENARIO_IMAGES[1]}
               style={styles.hero}
               imageStyle={styles.heroImg}
             >
@@ -258,7 +273,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 140,
+    paddingBottom: 220,
     gap: 24,
   },
   heroWrap: {

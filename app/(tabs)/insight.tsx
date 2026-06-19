@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
@@ -152,6 +153,12 @@ export default function Insight() {
           <View style={styles.heroWrap}>
             <View style={styles.heroOuter} />
             <View style={styles.heroInner}>
+              <LinearGradient
+                colors={[Colors.bg.secondary, Colors.accent.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
               <Image
                 source={require("../../assets/images/ember-avatar.png")}
                 style={styles.heroImage}
@@ -272,7 +279,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 24,
     paddingTop: 32,
-    paddingBottom: 48,
+    paddingBottom: 140,
     alignItems: "center",
     gap: 32,
   },

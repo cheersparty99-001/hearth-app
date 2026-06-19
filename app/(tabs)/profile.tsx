@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 48,
+    paddingBottom: 140,
     gap: 24,
   },
   profileBlock: {

@@ -85,8 +85,14 @@ export default function Home() {
           </View>
 
           <View style={styles.heroCard}>
+            <LinearGradient
+              colors={[Colors.bg.secondary, Colors.accent.primary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
             <ImageBackground
-              source={require("../../assets/images/splash-bg.png")}
+              source={require("../../assets/images/home-hero.png")}
               style={styles.heroBg}
               imageStyle={styles.heroImg}
             >
@@ -229,7 +235,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    paddingBottom: 32,
+    paddingBottom: 140,
     gap: 16,
   },
   welcomeBlock: { marginTop: 8 },

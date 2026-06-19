@@ -168,7 +168,7 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg.primary },
   bg: { flex: 1, backgroundColor: Colors.bg.primary },
-  bgImage: { opacity: 0.65 },
+  bgImage: { opacity: 1 },
   emberGlow: {
     position: "absolute",
     top: "50%",
