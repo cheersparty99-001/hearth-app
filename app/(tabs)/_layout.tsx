@@ -32,16 +32,21 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: Colors.bg.primary,
-          borderTopColor: Colors.border,
+          backgroundColor: "rgba(5, 17, 5, 0.95)",
+          borderTopColor: "rgba(255,255,255,0.05)",
           borderTopWidth: 1,
-          height: 64,
+          height: 68,
           paddingTop: 8,
-          paddingBottom: 10,
+          paddingBottom: 12,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "500", fontFamily: "Inter_500Medium" },
-        tabBarActiveTintColor: Colors.accent.primary,
-        tabBarInactiveTintColor: Colors.text.muted,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontFamily: "Inter_500Medium",
+          letterSpacing: 0.5,
+          marginTop: 2,
+        },
+        tabBarActiveTintColor: Colors.accent.light,
+        tabBarInactiveTintColor: "rgba(157, 190, 152, 0.6)",
       }}
     >
       <Tabs.Screen
@@ -49,25 +54,40 @@ export default function TabsLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon active="home" inactive="home-outline" focused={focused} color={color} />
+            <TabIcon
+              active="home"
+              inactive="home-outline"
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="crossroads"
         options={{
-          title: "Crossroads",
+          title: "Journey",
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon active="compass" inactive="compass-outline" focused={focused} color={color} />
+            <TabIcon
+              active="book"
+              inactive="book-outline"
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="insight"
         options={{
-          title: "Insight",
+          title: "Insights",
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon active="eye" inactive="eye-outline" focused={focused} color={color} />
+            <TabIcon
+              active="bulb"
+              inactive="bulb-outline"
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -76,7 +96,26 @@ export default function TabsLayout() {
         options={{
           title: "Ember",
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon active="flame" inactive="flame-outline" focused={focused} color={color} />
+            <TabIcon
+              active="flame"
+              inactive="flame-outline"
+              focused={focused}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="meditation"
+        options={{
+          title: "Meditate",
+          tabBarIcon: ({ focused, color }) => (
+            <TabIcon
+              active="leaf"
+              inactive="leaf-outline"
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />
@@ -85,7 +124,12 @@ export default function TabsLayout() {
         options={{
           title: "Profile",
           tabBarIcon: ({ focused, color }) => (
-            <TabIcon active="person" inactive="person-outline" focused={focused} color={color} />
+            <TabIcon
+              active="person"
+              inactive="person-outline"
+              focused={focused}
+              color={color}
+            />
           ),
         }}
       />

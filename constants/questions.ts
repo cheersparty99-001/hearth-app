@@ -1,17 +1,16 @@
 export type ChoiceId = "a" | "b" | "c" | "d";
+export type ChoiceIcon = "eco" | "flame" | "forum" | "shield";
 
 export interface Choice {
   id: ChoiceId;
-  icon: string;
-  title: string;
-  description: string;
+  icon: ChoiceIcon;
+  text: string;
 }
 
 export interface Question {
   id: number;
   chapter: string;
   scenario: string;
-  question: string;
   choices: Choice[];
 }
 
@@ -20,165 +19,76 @@ export const QUESTIONS: Question[] = [
     id: 1,
     chapter: "Relationships & Belonging",
     scenario:
-      "You receive an exciting job offer in a new city. It promises growth, but means leaving the people closest to you behind.",
-    question: "What matters most to you in this moment?",
+      "Your close friend cancels plans with you last minute—again. You feel that familiar sting. What's your first reaction?",
     choices: [
-      {
-        id: "a",
-        icon: "briefcase",
-        title: "Embrace Growth",
-        description: "Take the leap — this opportunity calls to me.",
-      },
-      {
-        id: "b",
-        icon: "home",
-        title: "Honor Connection",
-        description: "Stay close — the people I love come first.",
-      },
-      {
-        id: "c",
-        icon: "scale",
-        title: "Find Balance",
-        description: "Negotiate something that honors both.",
-      },
+      { id: "a", icon: "eco", text: "I understand—things happen. I let it go." },
+      { id: "b", icon: "flame", text: "I feel hurt, but I don't say anything." },
+      { id: "c", icon: "forum", text: "I ask them if everything's okay." },
       {
         id: "d",
-        icon: "time",
-        title: "Take More Time",
-        description: "I need more information before deciding.",
+        icon: "shield",
+        text: "I pull away. I don't want to care more than they do.",
       },
     ],
   },
   {
     id: 2,
-    chapter: "Freedom vs Security",
+    chapter: "Trust & Honesty",
     scenario:
-      "You have saved enough to quit your job and pursue something meaningful. But the safety of a steady paycheck feels hard to release.",
-    question: "What do you do?",
+      "Your partner forgets something important to you. They apologize, but the weight stays. What's true for you?",
     choices: [
-      {
-        id: "a",
-        icon: "sunny",
-        title: "Take the Leap",
-        description: "Now or never — I choose freedom.",
-      },
-      {
-        id: "b",
-        icon: "home",
-        title: "Stay for Now",
-        description: "Not the right time — security matters.",
-      },
-      {
-        id: "c",
-        icon: "chatbubble",
-        title: "Have the Talk",
-        description: "Discuss it openly with the people involved.",
-      },
-      {
-        id: "d",
-        icon: "refresh",
-        title: "Plan Transition",
-        description: "Set a date and prepare carefully.",
-      },
+      { id: "a", icon: "eco", text: "I forgive them. It's not worth holding." },
+      { id: "b", icon: "flame", text: "I say I'm okay, even though I'm not." },
+      { id: "c", icon: "forum", text: "I tell them how it landed for me." },
+      { id: "d", icon: "shield", text: "I keep a quiet distance for a while." },
     ],
   },
   {
     id: 3,
-    chapter: "Achievement & Meaning",
+    chapter: "Boundaries",
     scenario:
-      "After five years of dedicated work, your promotion finally arrives — but the role has shifted away from what first made you fall in love with this path.",
-    question: "What do you choose?",
+      "A family member oversteps a line you thought was clear. The room goes quiet. What do you do?",
     choices: [
-      {
-        id: "a",
-        icon: "trending-up",
-        title: "Take Promotion",
-        description: "I earned this — I'll make it work.",
-      },
-      {
-        id: "b",
-        icon: "walk",
-        title: "Walk Away",
-        description: "Stay put — meaning matters more than title.",
-      },
-      {
-        id: "c",
-        icon: "megaphone",
-        title: "Speak Up",
-        description: "Voice my disagreement and reshape the role.",
-      },
-      {
-        id: "d",
-        icon: "search",
-        title: "Understand First",
-        description: "Ask questions before I commit.",
-      },
+      { id: "a", icon: "eco", text: "I let it slide—keeping the peace matters." },
+      { id: "b", icon: "flame", text: "I feel the heat rise, but I stay silent." },
+      { id: "c", icon: "forum", text: "I name what I felt, gently and clearly." },
+      { id: "d", icon: "shield", text: "I step away from the conversation entirely." },
     ],
   },
   {
     id: 4,
-    chapter: "Loss & Letting Go",
+    chapter: "Recognition & Worth",
     scenario:
-      "Your closest friend hurt you deeply. They've reached out to make amends — sincere, vulnerable, asking for another chance.",
-    question: "What do you do?",
+      "A coworker takes credit for an idea that was yours. Others nod along. What's your move?",
     choices: [
-      {
-        id: "a",
-        icon: "heart",
-        title: "Forgive Fully",
-        description: "Rebuild — our bond is worth it.",
-      },
-      {
-        id: "b",
-        icon: "water",
-        title: "Allow Distance",
-        description: "Things have changed — I let it go.",
-      },
-      {
-        id: "c",
-        icon: "handshake",
-        title: "Forgive Slowly",
-        description: "I need time to rebuild trust.",
-      },
-      {
-        id: "d",
-        icon: "cloud",
-        title: "Reflect First",
-        description: "I'm not ready to decide yet.",
-      },
+      { id: "a", icon: "eco", text: "I let them have it. It's just work." },
+      { id: "b", icon: "flame", text: "I burn inside, but I say nothing." },
+      { id: "c", icon: "forum", text: "I speak up and reclaim the idea calmly." },
+      { id: "d", icon: "shield", text: "I make a note to share less with them." },
     ],
   },
   {
     id: 5,
+    chapter: "Closeness & Distance",
+    scenario:
+      "Someone you love asks for space. You hear the words, but it stings. What rises in you?",
+    choices: [
+      { id: "a", icon: "eco", text: "I give it freely. Their needs come first." },
+      { id: "b", icon: "flame", text: "I say yes, but I quietly feel abandoned." },
+      { id: "c", icon: "forum", text: "I ask what they need, and share what I need too." },
+      { id: "d", icon: "shield", text: "I withdraw first, before I can be left." },
+    ],
+  },
+  {
+    id: 6,
     chapter: "The True Self",
     scenario:
-      "If no one was watching, no one would judge, and no consequences could follow — there is something you've been carrying for a long time.",
-    question: "Choose what resonates.",
+      "Someone close to you criticizes you in front of others. The words land harder than expected. What do you do?",
     choices: [
-      {
-        id: "a",
-        icon: "exit",
-        title: "Leave Something",
-        description: "I've stayed too long in a place I've outgrown.",
-      },
-      {
-        id: "b",
-        icon: "eye",
-        title: "Be Seen",
-        description: "I'd let someone truly see me.",
-      },
-      {
-        id: "c",
-        icon: "leaf",
-        title: "Start Something",
-        description: "There's something I've been afraid to start.",
-      },
-      {
-        id: "d",
-        icon: "mic-off",
-        title: "Say Something",
-        description: "There are words I've never said aloud.",
-      },
+      { id: "a", icon: "eco", text: "I laugh it off and move on." },
+      { id: "b", icon: "flame", text: "I smile, but it sits in my chest for days." },
+      { id: "c", icon: "forum", text: "I tell them later that it hurt." },
+      { id: "d", icon: "shield", text: "I rebuild my guard around them." },
     ],
   },
 ];
@@ -188,14 +98,8 @@ export const DAILY_QUOTES: { text: string; author: string }[] = [
     text: "Between stimulus and response there is a space. In that space is our power to choose our response.",
     author: "Viktor Frankl",
   },
-  {
-    text: "The wound is the place where the Light enters you.",
-    author: "Rumi",
-  },
-  {
-    text: "What you seek is seeking you.",
-    author: "Rumi",
-  },
+  { text: "The wound is the place where the Light enters you.", author: "Rumi" },
+  { text: "What you seek is seeking you.", author: "Rumi" },
   {
     text: "Out of suffering have emerged the strongest souls; the most massive characters are seared with scars.",
     author: "Kahlil Gibran",
@@ -212,4 +116,11 @@ export const DAILY_QUOTES: { text: string; author: string }[] = [
     text: "Owning our story and loving ourselves through that process is the bravest thing we'll ever do.",
     author: "Brené Brown",
   },
+  {
+    text: "Growth isn't about fixing yourself—it's about understanding yourself.",
+    author: "Hearth",
+  },
 ];
+
+export const DAILY_REFLECTION =
+  "Growth isn't about fixing yourself—it's about understanding yourself.";

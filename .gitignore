@@ -36,6 +36,9 @@ yarn-error.*
 # secrets
 lib/config.ts
 
+# stitch designs
+stitch_designs/
+
 # typescript
 *.tsbuildinfo
 

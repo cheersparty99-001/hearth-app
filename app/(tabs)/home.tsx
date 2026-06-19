@@ -5,13 +5,15 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
+  ImageBackground,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
-import { DAILY_QUOTES } from "../../constants/questions";
+import { QUESTIONS, DAILY_REFLECTION } from "../../constants/questions";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 
@@ -23,183 +25,393 @@ function greetingForHour(h: number): string {
 
 export default function Home() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
-  const [name, setName] = useState<string>("");
-  const today = new Date();
-  const dayIndex = today.getDay() % DAILY_QUOTES.length;
-  const quote = DAILY_QUOTES[dayIndex];
-  const greeting = greetingForHour(today.getHours());
+  const { user } = useAuth();
+  const [name, setName] = useState<string>("Friend");
+  const [completed, setCompleted] = useState<number>(0);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("name")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (data?.name) setName(data.name);
+      const [{ data: profile }, answers] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("name")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("crossroads_answers")
+          .select("question_id")
+          .eq("user_id", user.id),
+      ]);
+      if (profile?.name) setName(profile.name);
       else if (user.email) setName(user.email.split("@")[0]);
+      const unique = new Set((answers.data ?? []).map((r: any) => r.question_id));
+      setCompleted(unique.size);
     })();
   }, [user]);
 
+  const greeting = greetingForHour(new Date().getHours());
+  const total = QUESTIONS.length;
+  const progress = Math.min(100, (completed / total) * 100);
+
   return (
-    <SafeAreaView style={styles.root} edges={["top"]}>
+    <View style={styles.root}>
       <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.content}>
+      <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.header}>
-          <View style={styles.brand}>
-            <Ionicons name="flame" size={22} color={Colors.accent.primary} />
-            <Text style={styles.brandText}>Hearth</Text>
+          <View style={styles.brandRow}>
+            <Ionicons
+              name="arrow-back"
+              size={22}
+              color={Colors.accent.light}
+            />
+            <Text style={styles.brand}>Hearth</Text>
           </View>
-          <Pressable onPress={signOut} hitSlop={10}>
-            <Text style={styles.signOut}>Sign Out</Text>
+          <View style={styles.avatar}>
+            <Ionicons name="person" size={18} color={Colors.accent.light} />
+          </View>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.welcomeBlock}>
+            <Text style={styles.greeting}>Good {greeting}, {name}</Text>
+            <Text style={styles.welcomeSub}>
+              You've taken {completed} step{completed === 1 ? "" : "s"} on your
+              journey inward.
+            </Text>
+          </View>
+
+          <View style={styles.heroCard}>
+            <ImageBackground
+              source={require("../../assets/images/splash-bg.png")}
+              style={styles.heroBg}
+              imageStyle={styles.heroImg}
+            >
+              <LinearGradient
+                colors={["transparent", "transparent", Colors.bg.primary]}
+                locations={[0, 0.4, 1]}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.heroBadgeWrap}>
+                <View style={styles.heroBadge}>
+                  <Text style={styles.heroBadgeText}>
+                    Current Environment: Fireside Retreat
+                  </Text>
+                </View>
+              </View>
+            </ImageBackground>
+          </View>
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Your Journey</Text>
+            <Pressable>
+              <Text style={styles.viewAll}>View All</Text>
+            </Pressable>
+          </View>
+
+          <Pressable
+            style={styles.glassCard}
+            onPress={() => router.push("/(tabs)/crossroads")}
+          >
+            <View style={styles.glassCardHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.glassCardTitle}>Path Explorer</Text>
+                <Text style={styles.glassCardSub}>
+                  Continue your self-discovery
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={Colors.text.secondary}
+              />
+            </View>
+            <View style={styles.progressLabelRow}>
+              <Text style={styles.progressLabel}>
+                {completed} / {total} Scenarios
+              </Text>
+              <Text style={styles.progressPct}>
+                {Math.round(progress)}%
+              </Text>
+            </View>
+            <View style={styles.progressBg}>
+              <View
+                style={[styles.progressFill, { width: `${progress}%` }]}
+              />
+            </View>
           </Pressable>
-        </View>
 
-        <Text style={styles.greeting}>
-          Good {greeting},{name ? ` ${name}` : ""}
-        </Text>
-        <Text style={styles.welcome}>What stirs within you today?</Text>
-
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>TODAY'S REFLECTION</Text>
-          <Text style={styles.quote}>"{quote.text}"</Text>
-          <Text style={styles.author}>— {quote.author}</Text>
-        </View>
-
-        <Text style={styles.sectionLabel}>EXPLORE</Text>
-
-        <Pressable
-          style={styles.featureCard}
-          onPress={() => router.push("/(tabs)/crossroads")}
-        >
-          <Ionicons name="trail-sign" size={28} color={Colors.accent.primary} />
-          <View style={styles.featureBody}>
-            <Text style={styles.featureTitle}>Life Crossroads</Text>
-            <Text style={styles.featureDesc}>
-              Five questions. Quiet patterns surface.
-            </Text>
+          <Text style={[styles.sectionTitle, { marginTop: 8 }]}>
+            Today's Reflection
+          </Text>
+          <View style={[styles.glassCard, styles.quoteCard]}>
+            <Ionicons
+              name="chatbox"
+              size={72}
+              color="rgba(255, 184, 118, 0.1)"
+              style={styles.quoteIcon}
+            />
+            <Text style={styles.quoteText}>"{DAILY_REFLECTION}"</Text>
+            <View style={styles.quoteDivider} />
+            <Ionicons
+              name="leaf"
+              size={32}
+              color="rgba(255, 184, 118, 0.2)"
+              style={styles.quoteLeaf}
+            />
           </View>
-          <Ionicons name="chevron-forward" size={20} color={Colors.text.muted} />
-        </Pressable>
 
-        <Pressable
-          style={styles.featureCard}
-          onPress={() => router.push("/(tabs)/chat")}
-        >
-          <Ionicons name="flame" size={28} color={Colors.accent.primary} />
-          <View style={styles.featureBody}>
-            <Text style={styles.featureTitle}>Ember</Text>
-            <Text style={styles.featureDesc}>Your companion for reflection.</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={Colors.text.muted} />
-        </Pressable>
-
-        <View style={[styles.featureCard, styles.locked]}>
-          <Ionicons name="leaf" size={28} color={Colors.text.muted} />
-          <View style={styles.featureBody}>
-            <Text style={[styles.featureTitle, { opacity: 0.8 }]}>
-              Forest Meditation
-            </Text>
-            <Text style={styles.featureDesc}>Coming soon</Text>
-          </View>
-          <Ionicons name="lock-closed" size={18} color={Colors.text.muted} />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          <Text style={[styles.sectionTitle, { marginTop: 8 }]}>
+            Connect with Ember
+          </Text>
+          <Pressable
+            style={styles.emberCard}
+            onPress={() => router.push("/(tabs)/chat")}
+          >
+            <View style={styles.emberIconWrap}>
+              <View style={styles.emberPulse} />
+              <Ionicons
+                name="flame"
+                size={28}
+                color={Colors.accent.light}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.emberTitle}>Chat with Ember</Text>
+              <Text style={styles.emberSub}>
+                Your AI companion for support and clarity
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={Colors.accent.light}
+            />
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg.primary },
-  content: { paddingHorizontal: 24, paddingBottom: 40 },
+  safe: { flex: 1 },
   header: {
+    height: 64,
+    paddingHorizontal: 24,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 8,
-    marginBottom: 24,
   },
-  brand: { flexDirection: "row", alignItems: "center", gap: 8 },
-  brandText: {
-    color: Colors.text.primary,
-    fontSize: 20,
-    fontWeight: "500",
-    letterSpacing: 1,
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  brand: {
+    color: Colors.accent.light,
+    fontSize: 24,
+    lineHeight: 32,
     fontFamily: "Lora_700Bold",
+    letterSpacing: -0.5,
   },
-  signOut: { color: Colors.text.muted, fontSize: 13, fontFamily: "Inter_400Regular" },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 184, 118, 0.2)",
+    backgroundColor: Colors.bg.elevated,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  content: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 32,
+    gap: 16,
+  },
+  welcomeBlock: { marginTop: 8 },
   greeting: {
     color: Colors.text.primary,
-    fontSize: 26,
-    fontWeight: "400",
-    marginBottom: 4,
-    fontFamily: "Lora_700Bold",
-  },
-  welcome: {
-    color: Colors.text.muted,
-    fontSize: 14,
-    marginBottom: 24,
-    fontFamily: "Inter_400Regular",
-  },
-  card: {
-    backgroundColor: Colors.bg.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: 20,
-    marginBottom: 32,
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-  },
-  cardLabel: {
-    color: Colors.accent.primary,
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 2,
-    marginBottom: 12,
-    fontFamily: "Inter_500Medium",
-  },
-  quote: {
-    color: Colors.text.primary,
-    fontSize: 17,
-    fontStyle: "italic",
-    lineHeight: 26,
-    marginBottom: 12,
-    fontFamily: "Lora_400Regular",
-  },
-  author: { color: Colors.text.muted, fontSize: 13, fontFamily: "Inter_400Regular" },
-  sectionLabel: {
-    color: Colors.text.muted,
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 2,
-    marginBottom: 12,
-    fontFamily: "Inter_500Medium",
-  },
-  featureCard: {
-    backgroundColor: Colors.bg.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: 18,
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-    gap: 14,
-  },
-  locked: { opacity: 0.65 },
-  featureBody: { flex: 1 },
-  featureTitle: {
-    color: Colors.text.primary,
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 4,
+    fontSize: 28,
+    lineHeight: 36,
     fontFamily: "Lora_600SemiBold",
   },
-  featureDesc: { color: Colors.text.muted, fontSize: 13, fontFamily: "Inter_400Regular" },
+  welcomeSub: {
+    color: Colors.text.secondary,
+    fontSize: 16,
+    lineHeight: 24,
+    marginTop: 4,
+    fontFamily: "Inter_400Regular",
+  },
+  heroCard: {
+    width: "100%",
+    aspectRatio: 16 / 10,
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: Colors.accent.primary,
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  heroBg: { flex: 1, justifyContent: "flex-end" },
+  heroImg: { resizeMode: "cover" },
+  heroBadgeWrap: { padding: 16 },
+  heroBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255, 184, 118, 0.2)",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 9999,
+  },
+  heroBadgeText: {
+    color: Colors.accent.light,
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.7,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+  sectionTitle: {
+    color: Colors.text.primary,
+    fontSize: 24,
+    lineHeight: 32,
+    fontFamily: "Lora_600SemiBold",
+  },
+  viewAll: {
+    color: Colors.accent.light,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.7,
+  },
+  glassCard: {
+    backgroundColor: Colors.glassPanel,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderSoft,
+    borderRadius: 16,
+    padding: 24,
+    gap: 16,
+  },
+  glassCardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  glassCardTitle: {
+    color: Colors.accent.light,
+    fontSize: 24,
+    lineHeight: 32,
+    fontFamily: "Lora_600SemiBold",
+  },
+  glassCardSub: {
+    color: Colors.text.secondary,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 4,
+    fontFamily: "Inter_500Medium",
+  },
+  progressLabelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  progressLabel: {
+    color: Colors.text.secondary,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+  },
+  progressPct: {
+    color: Colors.accent.light,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+  },
+  progressBg: {
+    height: 8,
+    backgroundColor: Colors.bg.elevated,
+    borderRadius: 9999,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: Colors.accent.light,
+    borderRadius: 9999,
+  },
+  quoteCard: {
+    padding: 32,
+    overflow: "hidden",
+    alignItems: "center",
+  },
+  quoteIcon: {
+    position: "absolute",
+    top: -16,
+    left: -8,
+  },
+  quoteLeaf: {
+    position: "absolute",
+    bottom: 16,
+    right: 16,
+    opacity: 0.5,
+    transform: [{ rotate: "12deg" }],
+  },
+  quoteText: {
+    color: Colors.text.primary,
+    fontSize: 24,
+    lineHeight: 32,
+    fontStyle: "italic",
+    textAlign: "center",
+    fontFamily: "Lora_600SemiBold",
+  },
+  quoteDivider: {
+    width: 48,
+    height: 1,
+    backgroundColor: "rgba(255, 184, 118, 0.3)",
+    marginTop: 24,
+  },
+  emberCard: {
+    backgroundColor: Colors.bg.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 184, 118, 0.05)",
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    shadowColor: Colors.accent.primary,
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  emberIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(200, 129, 58, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emberPulse: {
+    position: "absolute",
+    inset: 0,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(255, 184, 118, 0.2)",
+  },
+  emberTitle: {
+    color: Colors.text.primary,
+    fontSize: 22,
+    lineHeight: 28,
+    fontFamily: "Lora_600SemiBold",
+  },
+  emberSub: {
+    color: Colors.text.secondary,
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    marginTop: 2,
+  },
 });
