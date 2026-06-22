@@ -35,7 +35,7 @@ export default function Profile() {
           .eq("id", user.id)
           .maybeSingle(),
         supabase
-          .from("crossroads_answers")
+          .from("profiler_answers")
           .select("question_id", { count: "exact", head: true })
           .eq("user_id", user.id),
         supabase
@@ -63,7 +63,7 @@ export default function Profile() {
   };
 
   const stats: StatItem[] = [
-    { value: crossroadsCount, label: "Scenarios", icon: "book" },
+    { value: crossroadsCount, label: "Questions", icon: "book" },
     { value: insightCount, label: "Insights", icon: "bulb" },
     { value: chatCount, label: "Messages", icon: "chatbubbles" },
   ];

@@ -6,110 +6,61 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  Alert,
-  ActivityIndicator,
-  ImageBackground,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
-import { QUESTIONS, ChoiceId, ChoiceIcon } from "../../constants/questions";
-import { useAuth } from "../../context/AuthContext";
-import { supabase } from "../../lib/supabase";
-import { generateInsight } from "../../lib/openrouter";
-
-type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
-
-const ICON_MAP: Record<ChoiceIcon, IoniconName> = {
-  eco: "leaf",
-  flame: "flame",
-  forum: "chatbubbles",
-  shield: "shield",
-};
-
-const SCENARIO_IMAGES: Record<number, any> = {
-  1: require("../../assets/images/scenario-1.png"),
-  2: require("../../assets/images/scenario-2.png"),
-  3: require("../../assets/images/scenario-3.png"),
-  4: require("../../assets/images/scenario-4.png"),
-  5: require("../../assets/images/scenario-5.png"),
-  6: require("../../assets/images/scenario-6.png"),
-};
+import {
+  PROFILER_META,
+  PROFILER_QUESTIONS,
+  PROFILER_PROFILES,
+  calculateScores,
+  determineProfiles,
+  type Category,
+  type ProfilerQuestion,
+} from "../../constants/profiler";
 
 export default function Crossroads() {
   const router = useRouter();
-  const { user } = useAuth();
   const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, ChoiceId>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [answers, setAnswers] = useState<Record<number, Category>>({});
 
-  const question = QUESTIONS[index];
+  const question = PROFILER_QUESTIONS[index];
   const selected = answers[question.id];
-  const isLast = index === QUESTIONS.length - 1;
-  const total = QUESTIONS.length;
+  const isLast = index === PROFILER_QUESTIONS.length - 1;
+  const total = PROFILER_QUESTIONS.length;
+  const progress = ((index + (selected ? 1 : 0)) / total) * 100;
 
-  const onSelect = (choice: ChoiceId) => {
-    setAnswers((a) => ({ ...a, [question.id]: choice }));
+  const onSelect = (category: Category) => {
+    setAnswers((a) => ({ ...a, [question.id]: category }));
   };
 
-  const onContinue = async () => {
+  const onContinue = () => {
     if (!selected) return;
     if (!isLast) {
       setIndex((i) => i + 1);
       return;
     }
-    if (!user) {
-      Alert.alert("Not signed in", "Please sign in first.");
-      return;
-    }
 
-    setSubmitting(true);
-    try {
-      const rows = QUESTIONS.map((q) => ({
-        user_id: user.id,
-        question_id: q.id,
-        choice: answers[q.id],
-      }));
-      const { error: ansErr } = await supabase
-        .from("crossroads_answers")
-        .insert(rows);
-      if (ansErr) throw new Error(ansErr.message);
+    // Calculate scores and determine profile(s)
+    const scores = calculateScores(answers);
+    const profiles = determineProfiles(scores);
+    const profileIds = profiles.map((p) => p.id);
 
-      const payload = rows.map((r) => ({
-        question_id: r.question_id,
-        choice: r.choice,
-      }));
-      const insight = await generateInsight(payload);
+    // Navigate to result page
+    router.push({
+      pathname: "/(tabs)/profiler-result",
+      params: {
+        scores: JSON.stringify(scores),
+        profileIds: JSON.stringify(profileIds),
+      },
+    });
 
-      const { error: insErr } = await supabase.from("insights").insert({
-        user_id: user.id,
-        pattern_title: insight.title,
-        pattern_body: insight.body,
-        strengths: insight.strengths,
-        growth: insight.growth,
-      });
-      if (insErr) throw new Error(insErr.message);
-
-      router.push({
-        pathname: "/(tabs)/insight",
-        params: {
-          title: insight.title,
-          body: insight.body,
-          strengths: JSON.stringify(insight.strengths),
-          growth: insight.growth,
-        },
-      });
-
-      setIndex(0);
-      setAnswers({});
-    } catch (e: any) {
-      Alert.alert("Could not generate insight", e?.message ?? String(e));
-    } finally {
-      setSubmitting(false);
-    }
+    // Reset state for next time
+    setIndex(0);
+    setAnswers({});
   };
 
   const onBack = () => {
@@ -120,6 +71,7 @@ export default function Crossroads() {
     <View style={styles.root}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.safe} edges={["top"]}>
+        {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={onBack} hitSlop={10} disabled={index === 0}>
             <Ionicons
@@ -131,93 +83,80 @@ export default function Crossroads() {
             />
           </Pressable>
           <Text style={styles.headerTitle}>
-            Scenario {index + 1} of {total}
+            Question {index + 1} of {total}
           </Text>
-          <Pressable onPress={() => setSaved((s) => !s)} hitSlop={10}>
-            <Ionicons
-              name={saved ? "bookmark" : "bookmark-outline"}
-              size={24}
-              color={Colors.accent.light}
+          <View style={{ width: 24 }} />
+        </View>
+
+        {/* Progress Bar */}
+        <View style={styles.progressWrap}>
+          <View style={styles.progressBg}>
+            <View
+              style={[styles.progressFill, { width: `${progress}%` }]}
             />
-          </Pressable>
+          </View>
         </View>
 
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.heroWrap}>
+          {/* Question Card */}
+          <LinearGradient
+            colors={[Colors.bg.secondary, Colors.accent.primary]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.questionBg}
+          >
             <LinearGradient
-              colors={[Colors.bg.secondary, Colors.accent.primary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+              colors={["transparent", Colors.bg.primary]}
+              start={{ x: 0, y: 0.4 }}
+              end={{ x: 0, y: 1 }}
               style={StyleSheet.absoluteFill}
             />
-            <ImageBackground
-              source={SCENARIO_IMAGES[question.id] ?? SCENARIO_IMAGES[1]}
-              style={styles.hero}
-              imageStyle={styles.heroImg}
-            >
-              <LinearGradient
-                colors={["transparent", "transparent", Colors.bg.primary]}
-                locations={[0, 0.4, 1]}
-                style={StyleSheet.absoluteFill}
-              />
-            </ImageBackground>
-          </View>
+            <View style={styles.questionInner}>
+              <Text style={styles.questionEyebrow}>
+                {PROFILER_META.subtitle}
+              </Text>
+              <Text style={styles.questionText}>{question.text}</Text>
+            </View>
+          </LinearGradient>
 
-          <View style={styles.titleBlock}>
-            <Text style={styles.title}>Life Scenario</Text>
-            <View style={styles.titleDivider} />
-            <Text style={styles.chapter}>{question.chapter}</Text>
-            <Text style={styles.scenario}>{question.scenario}</Text>
-          </View>
-
-          <View style={styles.choices}>
-            {question.choices.map((c) => {
-              const isSel = selected === c.id;
-              const iconName = ICON_MAP[c.icon];
+          {/* Options */}
+          <View style={styles.options}>
+            {question.options.map((opt) => {
+              const isSel = selected === opt.category;
               return (
                 <Pressable
-                  key={c.id}
-                  style={[styles.choice, isSel && styles.choiceSelected]}
-                  onPress={() => onSelect(c.id)}
+                  key={opt.key}
+                  style={[styles.option, isSel && styles.optionSelected]}
+                  onPress={() => onSelect(opt.category)}
                 >
                   <View
                     style={[
-                      styles.iconCircle,
-                      isSel && styles.iconCircleSelected,
+                      styles.radio,
+                      isSel && styles.radioSelected,
                     ]}
                   >
-                    <Ionicons
-                      name={iconName}
-                      size={22}
-                      color={
-                        isSel ? Colors.accent.light : Colors.secondary
-                      }
-                    />
+                    {isSel && (
+                      <View style={styles.radioInner} />
+                    )}
                   </View>
                   <Text
                     style={[
-                      styles.choiceText,
-                      isSel && styles.choiceTextSelected,
+                      styles.optionText,
+                      isSel && styles.optionTextSelected,
                     ]}
                   >
-                    {c.text}
+                    {opt.text}
                   </Text>
-                  {isSel && (
-                    <Ionicons
-                      name="radio-button-on"
-                      size={16}
-                      color={Colors.accent.light}
-                    />
-                  )}
                 </Pressable>
               );
             })}
           </View>
         </ScrollView>
 
+        {/* Fixed Continue Button */}
         <LinearGradient
           colors={[
             "transparent",
@@ -230,23 +169,17 @@ export default function Crossroads() {
         >
           <Pressable
             style={[styles.cta, !selected && styles.ctaDisabled]}
-            disabled={!selected || submitting}
+            disabled={!selected}
             onPress={onContinue}
           >
-            {submitting ? (
-              <ActivityIndicator color={Colors.accent.onPrimary} />
-            ) : (
-              <>
-                <Text style={styles.ctaText}>
-                  {isLast ? "Reveal Insight" : "Continue"}
-                </Text>
-                <Ionicons
-                  name="arrow-forward"
-                  size={18}
-                  color={Colors.accent.onPrimary}
-                />
-              </>
-            )}
+            <Text style={styles.ctaText}>
+              {isLast ? "View Results" : "Continue"}
+            </Text>
+            <Ionicons
+              name="arrow-forward"
+              size={18}
+              color={Colors.accent.onPrimary}
+            />
           </Pressable>
         </LinearGradient>
       </SafeAreaView>
@@ -266,76 +199,76 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: Colors.text.primary,
-    fontSize: 24,
-    lineHeight: 32,
+    fontSize: 20,
+    lineHeight: 28,
     fontFamily: "Lora_600SemiBold",
+  },
+  progressWrap: {
+    paddingHorizontal: 24,
+    marginBottom: 16,
+  },
+  progressBg: {
+    height: 6,
+    backgroundColor: Colors.bg.elevated,
+    borderRadius: 9999,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: Colors.accent.light,
+    borderRadius: 9999,
   },
   content: {
     paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 220,
+    paddingTop: 4,
+    paddingBottom: 200,
     gap: 24,
   },
-  heroWrap: {
+  questionBg: {
     width: "100%",
-    aspectRatio: 16 / 9,
-    borderRadius: 24,
+    borderRadius: 20,
     overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.4,
+    minHeight: 180,
+    shadowColor: Colors.accent.primary,
+    shadowOpacity: 0.15,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 8 },
   },
-  hero: { flex: 1 },
-  heroImg: { resizeMode: "cover", opacity: 0.8 },
-  titleBlock: {
-    gap: 8,
+  questionInner: {
+    padding: 28,
+    gap: 12,
   },
-  title: {
+  questionEyebrow: {
     color: Colors.accent.light,
-    fontSize: 28,
-    lineHeight: 36,
-    fontFamily: "Lora_600SemiBold",
-    letterSpacing: -0.5,
-  },
-  titleDivider: {
-    width: 48,
-    height: 2,
-    backgroundColor: "rgba(200, 129, 58, 0.3)",
-    marginVertical: 8,
-  },
-  chapter: {
-    color: Colors.text.secondary,
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "Inter_500Medium",
-    letterSpacing: 0.7,
+    letterSpacing: 1.5,
     textTransform: "uppercase",
     opacity: 0.7,
   },
-  scenario: {
-    color: Colors.text.secondary,
-    fontSize: 18,
-    lineHeight: 28,
-    fontFamily: "Inter_400Regular",
-    marginTop: 4,
+  questionText: {
+    color: Colors.text.primary,
+    fontSize: 22,
+    lineHeight: 32,
+    fontFamily: "Lora_600SemiBold",
+    letterSpacing: -0.3,
   },
-  choices: {
-    gap: 16,
-    marginTop: 8,
+  options: {
+    gap: 14,
   },
-  choice: {
+  option: {
     backgroundColor: Colors.glassPanel,
-    borderTopWidth: 1,
-    borderTopColor: Colors.borderSoft,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.05)",
-    borderRadius: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderSoft,
+    borderRadius: 14,
     padding: 20,
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
   },
-  choiceSelected: {
+  optionSelected: {
     borderColor: Colors.accent.primary,
     borderWidth: 1.5,
     backgroundColor: "rgba(200, 129, 58, 0.1)",
@@ -344,25 +277,32 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 0 },
   },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(49, 78, 48, 0.3)",
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: "rgba(215, 199, 179, 0.3)",
     alignItems: "center",
     justifyContent: "center",
   },
-  iconCircleSelected: {
-    backgroundColor: "rgba(200, 129, 58, 0.4)",
+  radioSelected: {
+    borderColor: Colors.accent.light,
   },
-  choiceText: {
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: Colors.accent.light,
+  },
+  optionText: {
     flex: 1,
-    color: Colors.text.primary,
+    color: Colors.text.secondary,
     fontSize: 16,
     lineHeight: 24,
     fontFamily: "Inter_400Regular",
   },
-  choiceTextSelected: {
+  optionTextSelected: {
     color: Colors.accent.light,
     fontFamily: "Inter_500Medium",
   },
@@ -372,7 +312,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     padding: 24,
-    paddingTop: 32,
+    paddingTop: 40,
+    paddingBottom: 48,
   },
   cta: {
     backgroundColor: Colors.accent.primary,

@@ -13,7 +13,8 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
-import { QUESTIONS, DAILY_REFLECTION } from "../../constants/questions";
+import { PROFILER_QUESTIONS } from "../../constants/profiler";
+import { DAILY_REFLECTION } from "../../constants/questions";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 
@@ -39,7 +40,7 @@ export default function Home() {
           .eq("id", user.id)
           .maybeSingle(),
         supabase
-          .from("crossroads_answers")
+          .from("profiler_answers")
           .select("question_id")
           .eq("user_id", user.id),
       ]);
@@ -51,7 +52,7 @@ export default function Home() {
   }, [user]);
 
   const greeting = greetingForHour(new Date().getHours());
-  const total = QUESTIONS.length;
+  const total = PROFILER_QUESTIONS.length;
   const progress = Math.min(100, (completed / total) * 100);
 
   return (
@@ -124,9 +125,9 @@ export default function Home() {
           >
             <View style={styles.glassCardHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.glassCardTitle}>Path Explorer</Text>
+                <Text style={styles.glassCardTitle}>Wellness Profiler</Text>
                 <Text style={styles.glassCardSub}>
-                  Continue your self-discovery
+                  Understand your mental wellness landscape
                 </Text>
               </View>
               <Ionicons
@@ -137,7 +138,7 @@ export default function Home() {
             </View>
             <View style={styles.progressLabelRow}>
               <Text style={styles.progressLabel}>
-                {completed} / {total} Scenarios
+                {completed} / {total} Questions
               </Text>
               <Text style={styles.progressPct}>
                 {Math.round(progress)}%
