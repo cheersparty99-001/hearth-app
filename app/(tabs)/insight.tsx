@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  Image,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -159,9 +158,11 @@ export default function Insight() {
                 end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFill}
               />
-              <Image
-                source={require("../../assets/images/ember-avatar.png")}
-                style={styles.heroImage}
+              <Ionicons
+                name="leaf"
+                size={80}
+                color={Colors.accent.light}
+                style={{ opacity: 0.6 }}
               />
             </View>
           </View>
