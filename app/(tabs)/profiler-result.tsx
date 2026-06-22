@@ -23,10 +23,10 @@ import {
 } from "../../constants/profiler";
 
 const CATEGORY_COLORS: Record<Category, string> = {
-  stress: "#FF6B6B",
-  anxiety: "#FFB876",
-  depression: "#6C63FF",
-  sleep: "#4FC3F7",
+  stress: "#A07040",
+  anxiety: "#C8813A",
+  depression: "#E8A060",
+  sleep: "#FFB876",
 };
 
 const CATEGORY_ICONS: Record<Category, React.ComponentProps<typeof Ionicons>["name"]> = {

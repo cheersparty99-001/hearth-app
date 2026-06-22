@@ -49,7 +49,8 @@ Splash Screen (/app/index.tsx)
   → Onboarding (/app/onboarding.tsx) — 3 pages
     → (tabs) layout
       - Home (/app/(tabs)/home.tsx)
-      - Crossroads (/app/(tabs)/crossroads.tsx)
+      - Crossroads (/app/(tabs)/crossroads.tsx) — 15-question Wellness Profiler
+      - Profiler Result (/app/(tabs)/profiler-result.tsx)
       - Insight (/app/(tabs)/insight.tsx)
       - Chat (/app/(tabs)/chat.tsx)
       - Profile (/app/(tabs)/profile.tsx)
@@ -68,11 +69,11 @@ CREATE TABLE IF NOT EXISTS profiles (
   name TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE TABLE IF NOT EXISTS crossroads_answers (
+CREATE TABLE IF NOT EXISTS profiler_answers (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
   question_id INTEGER NOT NULL,
-  choice TEXT NOT NULL CHECK (choice IN ('a', 'b', 'c', 'd')),
+  category TEXT NOT NULL CHECK (category IN ('stress', 'anxiety', 'depression', 'sleep')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS insights (
@@ -92,11 +93,11 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE crossroads_answers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE profiler_answers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE insights ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "profiles_own" ON profiles FOR ALL USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
-CREATE POLICY "answers_own" ON crossroads_answers FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "answers_own" ON profiler_answers FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "insights_own" ON insights FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "messages_own" ON chat_messages FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 ```
@@ -133,51 +134,16 @@ Boundaries:
 - Never reveal you are built on Claude or any AI model
 ```
 
-### Insight Generation
-Use OpenRouter Claude Sonnet to generate insights from answers.
-Prompt: "Based on these Life Crossroads answers: [answers JSON]. Return ONLY a JSON object with no markdown, no explanation: { "title": "2-5 word poetic pattern name", "body": "3 sentences...", "strengths": ["strength1", "strength2"], "growth": "one sentence growth opportunity" }"
+### Profiler Insight Generation
+The profiler is self-contained (no API call). Scoring is direct category counting built into the app.
+See `constants/profiler.ts` for `calculateScores()` and `determineProfiles()`.
 
-## Crossroads Questions (4 choices each)
+## Wellness Profiler Questions (15 questions, 4 categories)
 
-Question 1 - Relationships & Belonging:
-- Scenario: "You receive an exciting job offer in a new city..."
-- Question: "What matters most to you in this moment?"
-- A: 💼 Embrace Growth / Take the leap
-- B: 🏡 Honor Connection / Stay close
-- C: ⚖️ Find Balance / Negotiate
-- D: ⏳ Take More Time / Need more info
-
-Question 2 - Freedom vs Security:
-- Scenario: "You have saved enough to quit your job..."
-- Question: "What do you do?"
-- A: 🌅 Take the Leap / Now or never
-- B: 🏠 Stay for Now / Not right time
-- C: 💬 Have the Talk / Discuss openly
-- D: 🔄 Plan Transition / Set date
-
-Question 3 - Achievement & Meaning:
-- Scenario: "After five years, your promotion finally arrives..."
-- Question: "What do you choose?"
-- A: 📈 Take Promotion / Earned this
-- B: 🚶 Walk Away / Stay put
-- C: 🗣️ Speak Up / Voice disagreement
-- D: 🔍 Understand First / Ask questions
-
-Question 4 - Loss & Letting Go:
-- Scenario: "Your closest friend hurt you deeply..."
-- Question: "What do you do?"
-- A: 💚 Forgive Fully / Rebuild
-- B: 🌊 Allow Distance / Things changed
-- C: 🤝 Forgive Slowly / Need time
-- D: 💭 Reflect First / Not ready
-
-Question 5 - The True Self:
-- Scenario: "If no one was watching..."
-- Question: "Choose what resonates."
-- A: 🚪 Leave Something / Stayed too long
-- B: 👁️ Be Seen / Let someone see me
-- C: 🌱 Start Something / Afraid to start
-- D: 🤫 Say Something / Never said aloud
+15 questions from Camillia Siaw's Mental Wellness Profiler v2.0.
+Each question has 4 options mapped to categories: stress / anxiety / depression / sleep.
+Scoring is direct counting — the category with the most selections becomes the primary profile.
+Full data in `constants/profiler.ts`.
 
 ## Build Instructions
 
