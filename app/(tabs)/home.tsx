@@ -13,8 +13,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
-import { PROFILER_QUESTIONS } from "../../constants/profiler";
-import { DAILY_REFLECTION } from "../../constants/questions";
+import { QUESTIONS, DAILY_REFLECTION } from "../../constants/questions";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 
@@ -52,7 +51,7 @@ export default function Home() {
   }, [user]);
 
   const greeting = greetingForHour(new Date().getHours());
-  const total = PROFILER_QUESTIONS.length;
+  const total = QUESTIONS.length;
   const progress = Math.min(100, (completed / total) * 100);
 
   return (

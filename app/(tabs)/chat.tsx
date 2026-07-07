@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/colors";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
-import { chatWithEmber } from "../../lib/openrouter";
+import { chatWithEmber } from "../../lib/claude";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 

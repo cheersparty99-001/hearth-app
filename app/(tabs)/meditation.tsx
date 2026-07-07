@@ -3,474 +3,403 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
-  Image,
   ScrollView,
-  Animated,
-  Easing,
+  Pressable,
+  ImageBackground,
 } from "react-native";
+import { Audio } from "expo-av";
+import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
 
-const DURATION_SECONDS = 12 * 60 + 48;
-const INITIAL_SECONDS = 5 * 60 + 32;
+interface Track {
+  id: number;
+  title: string;
+  day: string;
+  source: any;
+}
 
-function formatTime(total: number): string {
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+const TRACKS: Track[] = [
+  { id: 1, title: "今晚你可以休息了", day: "Day 1", source: require("../../assets/audio/Day 1 今晚你可以休息了.wav") },
+  { id: 2, title: "我是安全的", day: "Day 2", source: require("../../assets/audio/Day 2 我是安全的.wav") },
+  { id: 3, title: "允许情绪存在", day: "Day 3", source: require("../../assets/audio/Day 3 允许情绪存在.wav") },
+  { id: 4, title: "放下今天", day: "Day 4", source: require("../../assets/audio/Day 4 放下今天.wav") },
+  { id: 5, title: "给自己一个拥抱", day: "Day 5", source: require("../../assets/audio/Day 5 给自己一个拥抱.wav") },
+  { id: 6, title: "我值得被爱", day: "Day 6", source: require("../../assets/audio/Day 6 我值得被爱.wav") },
+  { id: 7, title: "我的安全岛", day: "Day 7", source: require("../../assets/audio/Day 7 我的安全岛.wav") },
+  { id: 8, title: "看见委屈", day: "Day 8", source: require("../../assets/audio/Day 8 看见委屈.wav") },
+  { id: 9, title: "释放愤怒", day: "Day 9", source: require("../../assets/audio/Day 9 释放愤怒.wav") },
+  { id: 10, title: "放下责备", day: "Day 10", source: require("../../assets/audio/Day 10 放下责备.wav") },
+  { id: 11, title: "我不需要完美", day: "Day 11", source: require("../../assets/audio/Day 11 我不需要完美.wav") },
+  { id: 12, title: "被理解的感觉", day: "Day 12", source: require("../../assets/audio/Day 12 被理解的感觉.wav") },
+  { id: 13, title: "给小时候的自己", day: "Day 13", source: require("../../assets/audio/Day 13 给小时候的自己.wav") },
+  { id: 14, title: "希望正在回来", day: "Day 14", source: require("../../assets/audio/Day 14 希望正在回来.wav") },
+  { id: 15, title: "理解而不是责怪", day: "Day 15", source: require("../../assets/audio/Day 15 理解而不是责怪.wav") },
+  { id: 16, title: "我可以保护自己", day: "Day 16", source: require("../../assets/audio/Day 16 我可以保护自己.wav") },
+  { id: 17, title: "慢慢靠近", day: "Day 17", source: require("../../assets/audio/Day 17 慢慢靠近.wav") },
+  { id: 18, title: "我值得被珍惜", day: "Day 18", source: require("../../assets/audio/Day 18 我值得被珍惜.wav") },
+  { id: 19, title: "爱依然存在", day: "Day 19", source: require("../../assets/audio/Day 19 爱依然存在.wav") },
+  { id: 20, title: "未来的我", day: "Day 20", source: require("../../assets/audio/Day 20 未来的我.wav") },
+  { id: 21, title: "爱与自由", day: "Day 21", source: require("../../assets/audio/Day 21 爱与自由.wav") },
+];
+
+function formatTime(millis: number): string {
+  const totalSeconds = Math.floor(millis / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
 export default function Meditation() {
-  const [elapsed, setElapsed] = useState(INITIAL_SECONDS);
-  const [playing, setPlaying] = useState(true);
-  const [favorited, setFavorited] = useState(false);
-  const pulse = useRef(new Animated.Value(0)).current;
+  const [activeTrack, setActiveTrack] = useState<Track | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [barWidth, setBarWidth] = useState(0);
+
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.ease),
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [pulse]);
+    Audio.setAudioModeAsync({
+      playsInSilentModeIOS: true,
+      staysActiveInBackground: false,
+      shouldDuckAndroid: true,
+    }).catch((e) => console.error("Audio mode error:", e));
 
-  useEffect(() => {
-    if (!playing) return;
-    const t = setInterval(() => {
-      setElapsed((e) => (e >= DURATION_SECONDS ? 0 : e + 1));
-    }, 1000);
-    return () => clearInterval(t);
-  }, [playing]);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      soundRef.current
+        ?.unloadAsync()
+        .catch((e) => console.error("Unload error:", e));
+    };
+  }, []);
 
-  const progress = elapsed / DURATION_SECONDS;
-  const pulseScale = pulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 1.05],
-  });
+  const startPolling = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(async () => {
+      const sound = soundRef.current;
+      if (!sound) return;
+      try {
+        const status = await sound.getStatusAsync();
+        if (status.isLoaded) {
+          setPosition(status.positionMillis);
+          setDuration(status.durationMillis ?? 0);
+          setIsPlaying(status.isPlaying);
+          if (status.didJustFinish) {
+            setIsPlaying(false);
+            setPosition(0);
+            await sound.setPositionAsync(0);
+            await sound.pauseAsync();
+          }
+        }
+      } catch (e) {
+        console.error("Status poll error:", e);
+      }
+    }, 500);
+  };
+
+  const unloadCurrent = async () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (soundRef.current) {
+      try {
+        await soundRef.current.unloadAsync();
+      } catch (e) {
+        console.error("Unload error:", e);
+      }
+      soundRef.current = null;
+    }
+  };
+
+  const loadAndPlay = async (track: Track) => {
+    try {
+      await unloadCurrent();
+      setActiveTrack(track);
+      setPosition(0);
+      setDuration(0);
+      const { sound } = await Audio.Sound.createAsync(track.source, {
+        shouldPlay: true,
+      });
+      soundRef.current = sound;
+      setIsPlaying(true);
+      startPolling();
+    } catch (e) {
+      console.error("Load audio error:", e);
+    }
+  };
+
+  const togglePlay = async () => {
+    const sound = soundRef.current;
+    if (!sound) return;
+    try {
+      const status = await sound.getStatusAsync();
+      if (!status.isLoaded) return;
+      if (status.isPlaying) {
+        await sound.pauseAsync();
+        setIsPlaying(false);
+      } else {
+        await sound.playAsync();
+        setIsPlaying(true);
+      }
+    } catch (e) {
+      console.error("Toggle play error:", e);
+    }
+  };
+
+  const onSelectTrack = (track: Track) => {
+    if (activeTrack?.id === track.id) {
+      togglePlay();
+    } else {
+      loadAndPlay(track);
+    }
+  };
+
+  const seek = async (locationX: number) => {
+    const sound = soundRef.current;
+    if (!sound || duration <= 0 || barWidth <= 0) return;
+    const ratio = Math.max(0, Math.min(1, locationX / barWidth));
+    try {
+      await sound.setPositionAsync(ratio * duration);
+      setPosition(ratio * duration);
+    } catch (e) {
+      console.error("Seek error:", e);
+    }
+  };
+
+  const skipBack = async () => {
+    const sound = soundRef.current;
+    if (!sound) return;
+    try {
+      await sound.setPositionAsync(0);
+      setPosition(0);
+    } catch (e) {
+      console.error("Skip back error:", e);
+    }
+  };
+
+  const skipForward = () => {
+    if (!activeTrack) return;
+    const idx = TRACKS.findIndex((t) => t.id === activeTrack.id);
+    const next = TRACKS[idx + 1];
+    if (next) loadAndPlay(next);
+  };
+
+  const progressRatio = duration > 0 ? position / duration : 0;
 
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
+      <ImageBackground
+        source={require("../../assets/images/meditation-bg.png")}
+        style={StyleSheet.absoluteFill}
+        imageStyle={styles.bgImage}
+      />
+      <LinearGradient
+        colors={["rgba(0,0,0,0.5)", "rgba(6,13,6,0.85)", "#09160a"]}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.header}>
-          <Pressable hitSlop={10}>
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color={Colors.text.secondary}
-            />
-          </Pressable>
-          <Text style={styles.headerEyebrow}>GUIDED MEDITATION</Text>
-          <View style={styles.headerRight}>
-            <Pressable
-              hitSlop={10}
-              onPress={() => setFavorited((f) => !f)}
-            >
-              <Ionicons
-                name={favorited ? "heart" : "heart-outline"}
-                size={24}
-                color={
-                  favorited
-                    ? Colors.accent.light
-                    : Colors.text.secondary
-                }
-              />
-            </Pressable>
-            <Pressable hitSlop={10}>
-              <Ionicons
-                name="ellipsis-vertical"
-                size={24}
-                color={Colors.text.secondary}
-              />
-            </Pressable>
-          </View>
+        <View style={styles.headerWrap}>
+          <Text style={styles.title}>Forest Meditation</Text>
+          <Text style={styles.subtitle}>21 days of guided healing</Text>
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            activeTrack ? styles.contentWithPlayer : null,
+          ]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.artworkBlock}>
-            <Animated.View
-              style={[
-                styles.playerCircle,
-                { transform: [{ scale: pulseScale }] },
-              ]}
-            >
-              <LinearGradient
-                colors={[
-                  "rgba(200, 129, 58, 0.2)",
-                  "transparent",
-                ]}
-                style={StyleSheet.absoluteFill}
-              />
-              <View style={styles.imageOuter}>
-                <View style={styles.imageInner}>
-                  <Image
-                    source={require("../../assets/images/meditation-bg.png")}
-                    style={styles.image}
-                  />
-                  <View style={styles.progressArcWrap} pointerEvents="none">
-                    <View style={styles.progressArc} />
-                  </View>
-                  <View style={styles.progressDot} />
-                </View>
-              </View>
-            </Animated.View>
-
-            <View style={styles.titleBlock}>
-              <Text style={styles.title}>Forest at Dusk</Text>
-              <Text style={styles.subtitle}>
-                A calming journey to help you release the day and return to
-                your center.
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.chapter}>
-            <Text style={styles.chapterLabel}>Chapter 2 of 5</Text>
-            <Text style={styles.chapterTitle}>Letting Go</Text>
-          </View>
-
-          <View style={styles.progress}>
-            <View style={styles.progressBg}>
-              <LinearGradient
-                colors={[Colors.accent.light, Colors.accent.primary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.progressFill, { width: `${progress * 100}%` }]}
-              />
-            </View>
-            <View style={styles.timeRow}>
-              <Text style={styles.timeText}>{formatTime(elapsed)}</Text>
-              <Text style={styles.timeText}>{formatTime(DURATION_SECONDS)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.transport}>
-            <Pressable
-              hitSlop={10}
-              onPress={() => setElapsed((e) => Math.max(0, e - 10))}
-            >
-              <Ionicons
-                name="refresh"
-                size={32}
-                color={Colors.text.secondary}
-                style={{ transform: [{ scaleX: -1 }] }}
-              />
-            </Pressable>
-            <View style={styles.transportCenter}>
-              <Pressable hitSlop={10}>
-                <Ionicons
-                  name="play-skip-back"
-                  size={36}
-                  color={Colors.text.secondary}
-                />
-              </Pressable>
+          {TRACKS.map((track) => {
+            const isActive = activeTrack?.id === track.id;
+            return (
               <Pressable
-                style={styles.playBtn}
-                onPress={() => setPlaying((p) => !p)}
+                key={track.id}
+                style={[styles.card, isActive && styles.cardActive]}
+                onPress={() => onSelectTrack(track)}
               >
-                <LinearGradient
-                  colors={[Colors.accent.light, Colors.accent.primary]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
+                <View style={styles.dayBadge}>
+                  <Text style={styles.dayBadgeText}>{track.day}</Text>
+                </View>
+                <Text style={styles.trackTitle} numberOfLines={1}>
+                  {track.title}
+                </Text>
                 <Ionicons
-                  name={playing ? "pause" : "play"}
-                  size={40}
-                  color={Colors.accent.onPrimary}
+                  name={isActive && isPlaying ? "pause-circle" : "play-circle"}
+                  size={32}
+                  color="#C8813A"
                 />
               </Pressable>
-              <Pressable hitSlop={10}>
-                <Ionicons
-                  name="play-skip-forward"
-                  size={36}
-                  color={Colors.text.secondary}
-                />
-              </Pressable>
-            </View>
-            <Pressable
-              hitSlop={10}
-              onPress={() =>
-                setElapsed((e) => Math.min(DURATION_SECONDS, e + 10))
-              }
-            >
-              <Ionicons
-                name="refresh"
-                size={32}
-                color={Colors.text.secondary}
-              />
-            </Pressable>
-          </View>
-
-          <View style={styles.actionsGrid}>
-            <Pressable style={styles.actionItem}>
-              <View style={styles.actionIcon}>
-                <Ionicons
-                  name="download-outline"
-                  size={24}
-                  color={Colors.text.secondary}
-                />
-              </View>
-              <Text style={styles.actionLabel}>Download</Text>
-            </Pressable>
-            <Pressable style={styles.actionItem}>
-              <View style={styles.actionIcon}>
-                <Ionicons
-                  name="add-circle-outline"
-                  size={24}
-                  color={Colors.text.secondary}
-                />
-              </View>
-              <Text style={styles.actionLabel}>Playlist</Text>
-            </Pressable>
-            <Pressable style={styles.actionItem}>
-              <View style={styles.actionIcon}>
-                <Ionicons
-                  name="timer-outline"
-                  size={24}
-                  color={Colors.text.secondary}
-                />
-              </View>
-              <Text style={styles.actionLabel}>Timer</Text>
-            </Pressable>
-          </View>
+            );
+          })}
         </ScrollView>
       </SafeAreaView>
+
+      {/* Bottom player sheet */}
+      {activeTrack && (
+        <View style={styles.playerSheet}>
+          <Text style={styles.playerTitle} numberOfLines={1}>
+            {activeTrack.title}
+          </Text>
+          <Text style={styles.playerDay}>{activeTrack.day}</Text>
+
+          <Pressable
+            style={styles.progressBar}
+            onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
+            onPress={(e) => seek(e.nativeEvent.locationX)}
+          >
+            <View
+              style={[styles.progressFill, { width: `${progressRatio * 100}%` }]}
+            />
+          </Pressable>
+
+          <View style={styles.timeRow}>
+            <Text style={styles.timeText}>{formatTime(position)}</Text>
+            <Text style={styles.timeText}>{formatTime(duration)}</Text>
+          </View>
+
+          <View style={styles.controls}>
+            <Pressable onPress={skipBack} hitSlop={12}>
+              <Ionicons name="play-skip-back" size={28} color="#C8813A" />
+            </Pressable>
+            <Pressable onPress={togglePlay} hitSlop={12}>
+              <Ionicons
+                name={isPlaying ? "pause-circle" : "play-circle"}
+                size={64}
+                color="#C8813A"
+              />
+            </Pressable>
+            <Pressable onPress={skipForward} hitSlop={12}>
+              <Ionicons name="play-skip-forward" size={28} color="#C8813A" />
+            </Pressable>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg.primary },
+  bgImage: { opacity: 0.35 },
   safe: { flex: 1 },
-  header: {
-    height: 64,
+
+  headerWrap: {
     paddingHorizontal: 24,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  headerEyebrow: {
-    color: Colors.text.secondary,
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 1.4,
-    textTransform: "uppercase",
-    opacity: 0.6,
-  },
-  headerRight: { flexDirection: "row", alignItems: "center", gap: 16 },
-  content: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 140,
-    alignItems: "center",
-  },
-  artworkBlock: {
-    alignItems: "center",
-    width: "100%",
-    maxWidth: 420,
-    marginTop: 16,
-    marginBottom: 32,
-  },
-  playerCircle: {
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    padding: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    shadowColor: Colors.accent.primary,
-    shadowOpacity: 0.15,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  imageOuter: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: "rgba(255, 184, 118, 0.2)",
-    padding: 4,
-    overflow: "hidden",
-  },
-  imageInner: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 999,
-    overflow: "hidden",
-    backgroundColor: Colors.bg.secondary,
-    position: "relative",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  progressArcWrap: {
-    ...StyleSheet.absoluteFillObject,
-    transform: [{ rotate: "-45deg" }],
-  },
-  progressArc: {
-    flex: 1,
-    borderRadius: 999,
-    borderWidth: 3,
-    borderColor: "rgba(255, 184, 118, 0.4)",
-    borderTopColor: "transparent",
-    borderLeftColor: "transparent",
-  },
-  progressDot: {
-    position: "absolute",
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.accent.light,
-    right: 15,
-    bottom: 60,
-    shadowColor: Colors.accent.light,
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  titleBlock: {
-    marginTop: 40,
-    alignItems: "center",
+    paddingTop: 12,
+    paddingBottom: 20,
   },
   title: {
-    color: Colors.text.primary,
+    color: "#E8F0E8",
     fontSize: 28,
-    lineHeight: 36,
     fontFamily: "Lora_700Bold",
-    letterSpacing: -0.5,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   subtitle: {
-    color: Colors.text.secondary,
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: "center",
-    maxWidth: 280,
-    opacity: 0.8,
+    color: "#D4E8D4",
+    fontSize: 15,
     fontFamily: "Inter_400Regular",
   },
-  chapter: {
-    alignItems: "center",
-    opacity: 0.6,
-    marginBottom: 32,
-  },
-  chapterLabel: {
-    color: Colors.secondary,
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.7,
-  },
-  chapterTitle: {
-    color: Colors.text.primary,
-    fontSize: 24,
-    lineHeight: 32,
-    fontFamily: "Lora_600SemiBold",
-    marginTop: 4,
-  },
-  progress: {
-    width: "100%",
-    maxWidth: 420,
+
+  content: {
+    paddingHorizontal: 24,
+    paddingBottom: 40,
     gap: 12,
-    marginBottom: 32,
   },
-  progressBg: {
-    width: "100%",
+  contentWithPlayer: {
+    paddingBottom: 220,
+  },
+
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: "rgba(30, 58, 30, 0.92)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#2A4A2A",
+    padding: 16,
+  },
+  cardActive: {
+    borderColor: "#C8813A",
+  },
+  dayBadge: {
+    backgroundColor: "#243824",
+    borderRadius: 8,
+    padding: 6,
+  },
+  dayBadgeText: {
+    color: "#C8813A",
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+  },
+  trackTitle: {
+    flex: 1,
+    color: "#E8F0E8",
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+  },
+
+  playerSheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "#0F1F0F",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 32,
+    borderTopWidth: 1,
+    borderColor: "#2A4A2A",
+  },
+  playerTitle: {
+    color: "#E8F0E8",
+    fontSize: 18,
+    fontFamily: "Lora_600SemiBold",
+    marginBottom: 2,
+  },
+  playerDay: {
+    color: "#6A946A",
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 16,
+  },
+  progressBar: {
     height: 4,
-    backgroundColor: Colors.bg.card,
-    borderRadius: 9999,
+    backgroundColor: "#1E3A1E",
+    borderRadius: 2,
     overflow: "hidden",
+    marginBottom: 8,
   },
   progressFill: {
     height: "100%",
-    borderRadius: 9999,
-    shadowColor: Colors.accent.light,
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 0 },
+    backgroundColor: "#C8813A",
+    borderRadius: 2,
   },
   timeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginBottom: 16,
   },
   timeText: {
-    color: Colors.text.secondary,
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.7,
+    color: "#6A946A",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
   },
-  transport: {
-    width: "100%",
-    maxWidth: 420,
+  controls: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-  },
-  transportCenter: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 40,
-  },
-  playBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
-    shadowColor: Colors.accent.primary,
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  actionsGrid: {
-    width: "100%",
-    maxWidth: 420,
-    marginTop: 48,
-    paddingTop: 32,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.05)",
-    flexDirection: "row",
-  },
-  actionItem: {
-    flex: 1,
-    alignItems: "center",
-    gap: 8,
-  },
-  actionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionLabel: {
-    color: Colors.text.secondary,
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.7,
-    opacity: 0.6,
+    gap: 36,
   },
 });

@@ -45,3 +45,10 @@ stitch_designs/
 # generated native folders
 /ios
 /android
+
+# large audio assets (exceed GitHub 100MB limit — host remotely or use Git LFS)
+assets/audio/
+*.wav
+
+# expo runtime log
+expo-log.txt

@@ -1,62 +1,81 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
+import { PROFILES, WellnessDimension } from "../../constants/questions";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 
-interface InsightShape {
-  title: string;
-  body: string;
+type Scores = {
+  stress: number;
+  anxiety: number;
+  depression: number;
+  sleep: number;
+};
+
+interface ProfileView {
+  name: string;
+  dimensionLabel: string;
+  description: string;
   strengths: string[];
   growth: string;
+  scores: Scores;
+  topDimension: WellnessDimension;
 }
 
-type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+const BARS: { key: keyof Scores; label: string }[] = [
+  { key: "stress", label: "Stress" },
+  { key: "anxiety", label: "Anxiety" },
+  { key: "depression", label: "Low Mood" },
+  { key: "sleep", label: "Sleep" },
+];
 
-const STRENGTH_ICONS: IoniconName[] = ["heart", "shield", "leaf", "flame"];
+function topOf(scores: Scores): WellnessDimension {
+  return (Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0]) as WellnessDimension;
+}
 
 export default function Insight() {
   const router = useRouter();
   const { user } = useAuth();
   const params = useLocalSearchParams<{
-    title?: string;
-    body?: string;
-    strengths?: string;
-    growth?: string;
+    stress?: string;
+    anxiety?: string;
+    depression?: string;
+    sleep?: string;
+    topDimension?: string;
   }>();
-  const [insight, setInsight] = useState<InsightShape | null>(null);
+
+  const [profile, setProfile] = useState<ProfileView | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (params.title && params.body) {
-      let strengths: string[] = [];
-      try {
-        strengths = params.strengths ? JSON.parse(params.strengths) : [];
-      } catch {
-        strengths = [];
-      }
-      setInsight({
-        title: params.title,
-        body: params.body,
-        strengths,
-        growth: params.growth ?? "",
+    // Fresh result passed via navigation params
+    if (params.topDimension && PROFILES[params.topDimension as WellnessDimension]) {
+      const topDimension = params.topDimension as WellnessDimension;
+      const scores: Scores = {
+        stress: Number(params.stress) || 0,
+        anxiety: Number(params.anxiety) || 0,
+        depression: Number(params.depression) || 0,
+        sleep: Number(params.sleep) || 0,
+      };
+      const p = PROFILES[topDimension];
+      setProfile({
+        name: p.name,
+        dimensionLabel: p.dimension,
+        description: p.description,
+        strengths: p.strengths,
+        growth: p.growth,
+        scores,
+        topDimension,
       });
       setLoading(false);
       return;
     }
 
+    // Otherwise load the most recent insight from Supabase
     if (!user) {
       setLoading(false);
       return;
@@ -64,25 +83,42 @@ export default function Insight() {
     (async () => {
       const { data } = await supabase
         .from("insights")
-        .select("pattern_title, pattern_body, strengths, growth")
+        .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (data) {
+        const scores: Scores = {
+          stress: data.stress_score ?? 0,
+          anxiety: data.anxiety_score ?? 0,
+          depression: data.depression_score ?? 0,
+          sleep: data.sleep_score ?? 0,
+        };
+        const topDimension = topOf(scores);
         const strengths = Array.isArray(data.strengths)
           ? (data.strengths as string[])
           : [];
-        setInsight({
-          title: data.pattern_title,
-          body: data.pattern_body,
+        setProfile({
+          name: data.pattern_title,
+          dimensionLabel: PROFILES[topDimension].dimension,
+          description: data.pattern_body,
           strengths,
           growth: data.growth ?? "",
+          scores,
+          topDimension,
         });
       }
       setLoading(false);
     })();
-  }, [user, params.title, params.body, params.strengths, params.growth]);
+  }, [
+    user,
+    params.topDimension,
+    params.stress,
+    params.anxiety,
+    params.depression,
+    params.sleep,
+  ]);
 
   if (loading) {
     return (
@@ -90,31 +126,31 @@ export default function Insight() {
         <StatusBar style="light" />
         <SafeAreaView style={styles.safe} edges={["top"]}>
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>Drawing your pattern...</Text>
+            <Text style={styles.emptyText}>Drawing your profile...</Text>
           </View>
         </SafeAreaView>
       </View>
     );
   }
 
-  if (!insight) {
+  if (!profile) {
     return (
       <View style={styles.root}>
         <StatusBar style="light" />
         <SafeAreaView style={styles.safe} edges={["top"]}>
           <View style={styles.empty}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="leaf" size={56} color={Colors.accent.light} />
+              <Ionicons name="leaf" size={52} color={Colors.accent.light} />
             </View>
-            <Text style={styles.emptyTitle}>No insight yet</Text>
+            <Text style={styles.emptyTitle}>No profile yet</Text>
             <Text style={styles.emptyText}>
-              Complete your Journey first to see your pattern emerge.
+              Complete the Wellness Profiler first to see your profile emerge.
             </Text>
             <Pressable
-              style={styles.primaryBtn}
+              style={styles.talkBtn}
               onPress={() => router.push("/(tabs)/crossroads")}
             >
-              <Text style={styles.primaryBtnText}>Begin Journey</Text>
+              <Text style={styles.talkBtnText}>Start Profiler</Text>
             </Pressable>
           </View>
         </SafeAreaView>
@@ -126,124 +162,83 @@ export default function Insight() {
     <View style={styles.root}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.header}>
-          <Pressable hitSlop={10} onPress={() => router.back()}>
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color={Colors.accent.light}
-            />
-          </Pressable>
-          <Text style={styles.headerBrand}>Hearth</Text>
-          <View style={styles.headerAvatar}>
-            <Ionicons name="flame" size={16} color={Colors.accent.light} />
-          </View>
-        </View>
-
         <ScrollView
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.titleBlock}>
-            <Text style={styles.eyebrow}>YOUR INSIGHT</Text>
-            <Text style={styles.title}>{insight.title}</Text>
-          </View>
+          {/* Header */}
+          <Text style={styles.eyebrow}>YOUR PROFILE</Text>
+          <Text style={styles.name}>{profile.name}</Text>
+          <Text style={styles.primaryArea}>
+            Primary area: {profile.dimensionLabel}
+          </Text>
 
-          <View style={styles.heroWrap}>
-            <View style={styles.heroOuter} />
-            <View style={styles.heroInner}>
-              <LinearGradient
-                colors={[Colors.bg.secondary, Colors.accent.primary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-              <Ionicons
-                name="leaf"
-                size={80}
-                color={Colors.accent.light}
-                style={{ opacity: 0.6 }}
-              />
-            </View>
-          </View>
+          <Text style={styles.description}>{profile.description}</Text>
 
-          <View style={styles.bodyCard}>
-            <Text style={styles.bodyText}>{insight.body}</Text>
-          </View>
-
-          {insight.strengths.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionLabelRow}>
-                <View style={styles.sectionLine} />
-                <Text style={styles.sectionLabel}>YOUR STRENGTHS</Text>
-                <View style={styles.sectionLine} />
-              </View>
-              <View style={styles.strengthsWrap}>
-                {insight.strengths.map((s, i) => (
-                  <View key={`${s}-${i}`} style={styles.strengthPill}>
-                    <Ionicons
-                      name={STRENGTH_ICONS[i % STRENGTH_ICONS.length]}
-                      size={14}
-                      color={Colors.secondary}
+          {/* Score bars */}
+          <Text style={styles.landscapeLabel}>YOUR WELLNESS LANDSCAPE</Text>
+          <View style={styles.bars}>
+            {BARS.map((bar) => {
+              const score = profile.scores[bar.key];
+              const isTop = profile.topDimension === bar.key;
+              return (
+                <View key={bar.key} style={styles.barRow}>
+                  <Text style={styles.barLabel}>{bar.label}</Text>
+                  <View style={styles.barContainer}>
+                    <View
+                      style={[
+                        styles.barFill,
+                        {
+                          width: `${(score / 15) * 100}%`,
+                          backgroundColor: isTop ? "#C8813A" : "#4A8C4A",
+                        },
+                      ]}
                     />
+                  </View>
+                  <Text style={styles.barScore}>{score}</Text>
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Strengths */}
+          {profile.strengths.length > 0 && (
+            <>
+              <Text style={styles.sectionLabel}>YOUR STRENGTHS</Text>
+              <View style={styles.strengthsWrap}>
+                {profile.strengths.map((s, i) => (
+                  <View key={`${s}-${i}`} style={styles.strengthPill}>
                     <Text style={styles.strengthText}>{s}</Text>
                   </View>
                 ))}
               </View>
-            </View>
+            </>
           )}
 
-          {!!insight.growth && (
-            <View style={styles.section}>
-              <View style={styles.growthHeader}>
-                <View style={styles.growthDot} />
-                <Text style={styles.growthTitle}>Growth Opportunity</Text>
+          {/* Growth */}
+          {!!profile.growth && (
+            <>
+              <Text style={styles.sectionLabel}>GROWTH OPPORTUNITY</Text>
+              <View style={styles.growthCard}>
+                <View style={styles.growthAccent} />
+                <Text style={styles.growthText}>{profile.growth}</Text>
               </View>
-              <View style={styles.growthBody}>
-                <Text style={styles.growthText}>{insight.growth}</Text>
-              </View>
-            </View>
+            </>
           )}
 
-          <View style={styles.quoteWrap}>
+          {/* CTA */}
+          <Pressable
+            style={styles.talkBtn}
+            onPress={() => router.push("/(tabs)/chat")}
+          >
             <Ionicons
-              name="chatbox"
-              size={32}
-              color="rgba(252, 186, 101, 0.4)"
+              name="chatbubble-ellipses"
+              size={18}
+              color={Colors.accent.onPrimary}
+              style={{ marginRight: 8 }}
             />
-            <Text style={styles.pullQuote}>
-              "You're not too sensitive. You're just deeply human."
-            </Text>
-          </View>
-
-          <View style={styles.actions}>
-            <Pressable
-              style={styles.primaryBtn}
-              onPress={() => router.push("/(tabs)/chat")}
-            >
-              <Text style={styles.primaryBtnText}>
-                Explore Deeper Insights
-              </Text>
-              <Ionicons
-                name="arrow-forward"
-                size={18}
-                color={Colors.accent.onPrimary}
-              />
-            </Pressable>
-            <Pressable
-              style={styles.secondaryBtn}
-              onPress={() => setSaved((s) => !s)}
-            >
-              <Ionicons
-                name={saved ? "bookmark" : "bookmark-outline"}
-                size={20}
-                color={Colors.text.primary}
-              />
-              <Text style={styles.secondaryBtnText}>
-                {saved ? "Saved" : "Save Insight"}
-              </Text>
-            </Pressable>
-          </View>
+            <Text style={styles.talkBtnText}>Talk to Ember</Text>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -253,235 +248,169 @@ export default function Insight() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg.primary },
   safe: { flex: 1 },
-  header: {
-    height: 64,
-    paddingHorizontal: 24,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  headerBrand: {
-    color: Colors.accent.light,
-    fontSize: 24,
-    lineHeight: 32,
-    fontFamily: "Lora_700Bold",
-    letterSpacing: -0.5,
-  },
-  headerAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 184, 118, 0.2)",
-    backgroundColor: Colors.bg.elevated,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   content: {
     paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 140,
-    alignItems: "center",
-    gap: 32,
+    paddingTop: 24,
+    paddingBottom: 60,
   },
-  titleBlock: { alignItems: "center", gap: 8 },
+
   eyebrow: {
-    color: Colors.text.primary,
-    fontSize: 14,
+    color: "#C8813A",
+    fontSize: 11,
     fontFamily: "Inter_500Medium",
-    letterSpacing: 2.8,
-    opacity: 0.6,
+    letterSpacing: 1.5,
+    marginBottom: 8,
   },
-  title: {
-    color: Colors.tertiaryFixed,
-    fontSize: 28,
-    lineHeight: 36,
+  name: {
+    color: "#E8A855",
+    fontSize: 26,
+    lineHeight: 34,
     fontFamily: "Lora_700Bold",
-    fontStyle: "italic",
+    marginBottom: 6,
   },
-  heroWrap: {
-    width: 256,
-    height: 256,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  heroOuter: {
-    position: "absolute",
-    width: 290,
-    height: 290,
-    borderRadius: 145,
-    borderWidth: 2,
-    borderColor: "rgba(255, 184, 118, 0.2)",
-  },
-  heroInner: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 128,
-    borderWidth: 4,
-    borderColor: Colors.bg.secondary,
-    overflow: "hidden",
-    backgroundColor: Colors.bg.card,
-    shadowColor: Colors.accent.primary,
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  heroImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
-  bodyCard: {
-    width: "100%",
-    backgroundColor: Colors.glassPanel,
-    borderTopWidth: 1,
-    borderTopColor: Colors.borderSoft,
-    borderRadius: 16,
-    padding: 24,
-  },
-  bodyText: {
-    color: Colors.text.secondary,
-    fontSize: 18,
-    lineHeight: 28,
+  primaryArea: {
+    color: "#6A946A",
+    fontSize: 14,
     fontFamily: "Inter_400Regular",
+    marginBottom: 20,
   },
-  section: { width: "100%", gap: 16 },
-  sectionLabelRow: {
+  description: {
+    color: "#D4E8D4",
+    fontSize: 15,
+    lineHeight: 24,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 32,
+  },
+
+  landscapeLabel: {
+    color: "#6A946A",
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 1.5,
+    marginBottom: 16,
+  },
+  bars: {
+    gap: 14,
+    marginBottom: 32,
+  },
+  barRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+    gap: 12,
   },
-  sectionLine: {
-    height: 1,
-    width: 32,
-    backgroundColor: Colors.border,
-  },
-  sectionLabel: {
-    color: Colors.accent.light,
-    fontSize: 14,
+  barLabel: {
+    width: 80,
+    color: "#D4E8D4",
+    fontSize: 13,
     fontFamily: "Inter_500Medium",
-    letterSpacing: 2,
-    textTransform: "uppercase",
+  },
+  barContainer: {
+    flex: 1,
+    height: 6,
+    backgroundColor: "#1E3A1E",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  barFill: {
+    height: "100%",
+    borderRadius: 3,
+  },
+  barScore: {
+    width: 24,
+    color: "#6A946A",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    textAlign: "right",
+  },
+
+  sectionLabel: {
+    color: "#6A946A",
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 1.5,
+    marginBottom: 14,
   },
   strengthsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
     gap: 12,
+    marginBottom: 32,
   },
   strengthPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 9999,
-    backgroundColor: "rgba(49, 78, 48, 0.3)",
+    backgroundColor: "#243824",
     borderWidth: 1,
-    borderColor: "rgba(174, 207, 168, 0.2)",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    borderColor: "#C8813A",
+    borderRadius: 50,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
   },
   strengthText: {
-    color: Colors.secondary,
+    color: "#D4E8D4",
     fontSize: 14,
     fontFamily: "Inter_500Medium",
   },
-  growthHeader: {
+
+  growthCard: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+    backgroundColor: "#1E3A1E",
+    borderWidth: 1,
+    borderColor: "#2A4A2A",
+    borderRadius: 16,
+    padding: 16,
+    gap: 14,
+    marginBottom: 36,
   },
-  growthDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.tertiary,
-    shadowColor: Colors.tertiary,
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  growthTitle: {
-    color: Colors.tertiaryFixed,
-    fontSize: 24,
-    lineHeight: 32,
-    fontFamily: "Lora_600SemiBold",
-  },
-  growthBody: {
-    paddingLeft: 16,
-    borderLeftWidth: 1,
-    borderLeftColor: "rgba(252, 186, 101, 0.2)",
+  growthAccent: {
+    width: 3,
+    borderRadius: 2,
+    backgroundColor: "#C8813A",
   },
   growthText: {
-    color: Colors.text.primary,
-    fontSize: 16,
+    flex: 1,
+    color: "#D4E8D4",
+    fontSize: 15,
     lineHeight: 24,
     fontFamily: "Inter_400Regular",
   },
-  quoteWrap: {
-    width: "100%",
-    paddingVertical: 24,
-    gap: 8,
-  },
-  pullQuote: {
-    color: Colors.text.secondary,
-    fontSize: 24,
-    lineHeight: 32,
-    fontStyle: "italic",
-    fontFamily: "Lora_600SemiBold",
-  },
-  actions: { width: "100%", gap: 16, paddingTop: 16 },
-  primaryBtn: {
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: Colors.accent.primary,
+
+  talkBtn: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-    shadowColor: Colors.accent.primary,
+    backgroundColor: "#C8813A",
+    borderRadius: 50,
+    padding: 16,
+    shadowColor: "#C8813A",
     shadowOpacity: 0.3,
     shadowRadius: 20,
-    shadowOffset: { width: 0, height: 0 },
+    shadowOffset: { width: 0, height: 8 },
   },
-  primaryBtnText: {
+  talkBtnText: {
     color: Colors.accent.onPrimary,
-    fontSize: 18,
-    fontFamily: "Inter_500Medium",
-    fontWeight: "700",
+    fontSize: 16,
+    fontFamily: "Inter_600SemiBold",
   },
-  secondaryBtn: {
-    height: 56,
-    borderRadius: 16,
-    backgroundColor: "rgba(32, 45, 31, 0.5)",
-    borderWidth: 1,
-    borderColor: "rgba(82, 68, 56, 0.3)",
+
+  empty: {
+    flex: 1,
+    padding: 24,
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
   },
-  secondaryBtnText: {
-    color: Colors.text.primary,
-    fontSize: 16,
-    fontFamily: "Inter_500Medium",
-  },
-  empty: { flex: 1, padding: 24, alignItems: "center", justifyContent: "center" },
   emptyIcon: { marginBottom: 16 },
   emptyTitle: {
     color: Colors.text.primary,
-    fontSize: 24,
-    lineHeight: 32,
+    fontSize: 22,
     fontFamily: "Lora_600SemiBold",
     marginBottom: 8,
   },
   emptyText: {
     color: Colors.text.secondary,
-    fontSize: 16,
+    fontSize: 15,
     textAlign: "center",
     marginBottom: 24,
     maxWidth: 280,
     fontFamily: "Inter_400Regular",
-    lineHeight: 24,
+    lineHeight: 22,
   },
 });

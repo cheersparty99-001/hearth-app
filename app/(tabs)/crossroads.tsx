@@ -6,94 +6,130 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
 import {
-  PROFILER_META,
-  PROFILER_QUESTIONS,
-  PROFILER_PROFILES,
-  calculateScores,
-  determineProfiles,
-  type Category,
-  type ProfilerQuestion,
-} from "../../constants/profiler";
+  QUESTIONS,
+  DIMENSION_MAP,
+  PROFILES,
+  ChoiceId,
+  WellnessDimension,
+} from "../../constants/questions";
+import { useAuth } from "../../context/AuthContext";
+import { supabase } from "../../lib/supabase";
 
 export default function Crossroads() {
   const router = useRouter();
+  const { user } = useAuth();
   const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, Category>>({});
+  const [answers, setAnswers] = useState<Record<number, ChoiceId>>({});
+  const [submitting, setSubmitting] = useState(false);
 
-  const question = PROFILER_QUESTIONS[index];
+  const question = QUESTIONS[index];
   const selected = answers[question.id];
-  const isLast = index === PROFILER_QUESTIONS.length - 1;
-  const total = PROFILER_QUESTIONS.length;
-  const progress = ((index + (selected ? 1 : 0)) / total) * 100;
+  const isLast = index === QUESTIONS.length - 1;
+  const total = QUESTIONS.length;
+  const progress = (index + 1) / total;
 
-  const onSelect = (category: Category) => {
-    setAnswers((a) => ({ ...a, [question.id]: category }));
-  };
-
-  const onContinue = () => {
-    if (!selected) return;
-    if (!isLast) {
-      setIndex((i) => i + 1);
-      return;
-    }
-
-    // Calculate scores and determine profile(s)
-    const scores = calculateScores(answers);
-    const profiles = determineProfiles(scores);
-    const profileIds = profiles.map((p) => p.id);
-
-    // Navigate to result page
-    router.push({
-      pathname: "/(tabs)/profiler-result",
-      params: {
-        scores: JSON.stringify(scores),
-        profileIds: JSON.stringify(profileIds),
-      },
-    });
-
-    // Reset state for next time
-    setIndex(0);
-    setAnswers({});
+  const onSelect = (choice: ChoiceId) => {
+    setAnswers((a) => ({ ...a, [question.id]: choice }));
   };
 
   const onBack = () => {
     if (index > 0) setIndex((i) => i - 1);
   };
 
+  const onContinue = async () => {
+    if (!selected) return;
+    if (!isLast) {
+      setIndex((i) => i + 1);
+      return;
+    }
+    if (!user) {
+      Alert.alert("Not signed in", "Please sign in first.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Preserve raw answer history
+      const rows = QUESTIONS.map((q) => ({
+        user_id: user.id,
+        question_id: q.id,
+        choice: answers[q.id],
+      }));
+      await supabase.from("crossroads_answers").insert(rows);
+
+      // Score each wellness dimension
+      const scores = { stress: 0, anxiety: 0, depression: 0, sleep: 0 };
+      rows.forEach((answer) => {
+        const dimension = DIMENSION_MAP[answer.choice as ChoiceId];
+        scores[dimension]++;
+      });
+      const topDimension = (Object.entries(scores).sort(
+        (a, b) => b[1] - a[1]
+      )[0][0]) as WellnessDimension;
+
+      const { error: insErr } = await supabase.from("insights").insert({
+        user_id: user.id,
+        pattern_title: PROFILES[topDimension].name,
+        pattern_body: PROFILES[topDimension].description,
+        strengths: PROFILES[topDimension].strengths,
+        growth: PROFILES[topDimension].growth,
+        stress_score: scores.stress,
+        anxiety_score: scores.anxiety,
+        depression_score: scores.depression,
+        sleep_score: scores.sleep,
+      });
+      if (insErr) throw new Error(insErr.message);
+
+      router.push({
+        pathname: "/(tabs)/insight",
+        params: {
+          stress: scores.stress,
+          anxiety: scores.anxiety,
+          depression: scores.depression,
+          sleep: scores.sleep,
+          topDimension,
+        },
+      });
+
+      setIndex(0);
+      setAnswers({});
+    } catch (e: any) {
+      Alert.alert("Could not save your profile", e?.message ?? String(e));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
       <SafeAreaView style={styles.safe} edges={["top"]}>
-        {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={onBack} hitSlop={10} disabled={index === 0}>
             <Ionicons
               name="arrow-back"
               size={24}
-              color={
-                index === 0 ? Colors.text.muted : Colors.accent.light
-              }
+              color={index === 0 ? Colors.text.muted : Colors.accent.light}
             />
           </Pressable>
-          <Text style={styles.headerTitle}>
-            Question {index + 1} of {total}
-          </Text>
+          <Text style={styles.headerTitle}>Wellness Profiler</Text>
           <View style={{ width: 24 }} />
         </View>
 
-        {/* Progress Bar */}
-        <View style={styles.progressWrap}>
-          <View style={styles.progressBg}>
-            <View
-              style={[styles.progressFill, { width: `${progress}%` }]}
-            />
+        <View style={styles.progressBlock}>
+          <Text style={styles.progressLabel}>
+            Question {index + 1} of {total}
+          </Text>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
           </View>
         </View>
 
@@ -101,87 +137,60 @@ export default function Crossroads() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {/* Question Card */}
-          <LinearGradient
-            colors={[Colors.bg.secondary, Colors.accent.primary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.questionBg}
-          >
-            <LinearGradient
-              colors={["transparent", Colors.bg.primary]}
-              start={{ x: 0, y: 0.4 }}
-              end={{ x: 0, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.questionInner}>
-              <Text style={styles.questionEyebrow}>
-                {PROFILER_META.subtitle}
-              </Text>
-              <Text style={styles.questionText}>{question.text}</Text>
-            </View>
-          </LinearGradient>
+          <Text style={styles.scenario}>{question.scenario}</Text>
 
-          {/* Options */}
-          <View style={styles.options}>
-            {question.options.map((opt) => {
-              const isSel = selected === opt.category;
+          <View style={styles.choices}>
+            {question.choices.map((c) => {
+              const isSel = selected === c.id;
               return (
                 <Pressable
-                  key={opt.key}
-                  style={[styles.option, isSel && styles.optionSelected]}
-                  onPress={() => onSelect(opt.category)}
+                  key={c.id}
+                  style={[styles.choice, isSel && styles.choiceSelected]}
+                  onPress={() => onSelect(c.id as ChoiceId)}
                 >
-                  <View
-                    style={[
-                      styles.radio,
-                      isSel && styles.radioSelected,
-                    ]}
-                  >
-                    {isSel && (
-                      <View style={styles.radioInner} />
-                    )}
-                  </View>
                   <Text
                     style={[
-                      styles.optionText,
-                      isSel && styles.optionTextSelected,
+                      styles.choiceText,
+                      isSel && styles.choiceTextSelected,
                     ]}
                   >
-                    {opt.text}
+                    {c.title}
                   </Text>
+                  {isSel && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color={Colors.accent.light}
+                    />
+                  )}
                 </Pressable>
               );
             })}
           </View>
         </ScrollView>
 
-        {/* Fixed Continue Button */}
-        <LinearGradient
-          colors={[
-            "transparent",
-            Colors.bg.primary,
-            Colors.bg.primary,
-          ]}
-          locations={[0, 0.5, 1]}
-          style={styles.ctaWrap}
-          pointerEvents="box-none"
-        >
+        <View style={styles.ctaWrap}>
           <Pressable
             style={[styles.cta, !selected && styles.ctaDisabled]}
-            disabled={!selected}
+            disabled={!selected || submitting}
             onPress={onContinue}
           >
-            <Text style={styles.ctaText}>
-              {isLast ? "View Results" : "Continue"}
-            </Text>
-            <Ionicons
-              name="arrow-forward"
-              size={18}
-              color={Colors.accent.onPrimary}
-            />
+            {submitting ? (
+              <ActivityIndicator color={Colors.accent.onPrimary} />
+            ) : (
+              <>
+                <Text style={styles.ctaText}>
+                  {isLast ? "Reveal My Profile" : "Continue"}
+                </Text>
+                <Ionicons
+                  name="arrow-forward"
+                  size={18}
+                  color={Colors.accent.onPrimary}
+                />
+              </>
+            )}
           </Pressable>
-        </LinearGradient>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -191,7 +200,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg.primary },
   safe: { flex: 1 },
   header: {
-    height: 64,
+    height: 56,
     paddingHorizontal: 24,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -200,109 +209,74 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: Colors.text.primary,
     fontSize: 20,
-    lineHeight: 28,
     fontFamily: "Lora_600SemiBold",
   },
-  progressWrap: {
+  progressBlock: {
     paddingHorizontal: 24,
-    marginBottom: 16,
+    paddingTop: 8,
+    paddingBottom: 20,
+    gap: 10,
   },
-  progressBg: {
+  progressLabel: {
+    color: Colors.text.muted,
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 0.5,
+  },
+  progressTrack: {
     height: 6,
-    backgroundColor: Colors.bg.elevated,
-    borderRadius: 9999,
+    borderRadius: 3,
+    backgroundColor: "#1E3A1E",
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    backgroundColor: Colors.accent.light,
-    borderRadius: 9999,
+    borderRadius: 3,
+    backgroundColor: Colors.accent.primary,
   },
   content: {
     paddingHorizontal: 24,
-    paddingTop: 4,
-    paddingBottom: 200,
-    gap: 24,
+    paddingTop: 8,
+    paddingBottom: 140,
   },
-  questionBg: {
-    width: "100%",
-    borderRadius: 20,
-    overflow: "hidden",
-    minHeight: 180,
-    shadowColor: Colors.accent.primary,
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-  },
-  questionInner: {
-    padding: 28,
-    gap: 12,
-  },
-  questionEyebrow: {
-    color: Colors.accent.light,
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    opacity: 0.7,
-  },
-  questionText: {
+  scenario: {
     color: Colors.text.primary,
-    fontSize: 22,
-    lineHeight: 32,
+    fontSize: 24,
+    lineHeight: 34,
     fontFamily: "Lora_600SemiBold",
-    letterSpacing: -0.3,
+    marginBottom: 28,
   },
-  options: {
+  choices: {
     gap: 14,
   },
-  option: {
-    backgroundColor: Colors.glassPanel,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
-    borderTopWidth: 1,
-    borderTopColor: Colors.borderSoft,
+  choice: {
+    backgroundColor: "rgba(30, 58, 30, 0.5)",
+    borderWidth: 1.5,
+    borderColor: "rgba(42, 74, 42, 0.7)",
     borderRadius: 14,
-    padding: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    justifyContent: "space-between",
+    gap: 12,
   },
-  optionSelected: {
+  choiceSelected: {
     borderColor: Colors.accent.primary,
-    borderWidth: 1.5,
-    backgroundColor: "rgba(200, 129, 58, 0.1)",
+    backgroundColor: "rgba(200, 129, 58, 0.12)",
     shadowColor: Colors.accent.primary,
     shadowOpacity: 0.25,
-    shadowRadius: 20,
+    shadowRadius: 16,
     shadowOffset: { width: 0, height: 0 },
   },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: "rgba(215, 199, 179, 0.3)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  radioSelected: {
-    borderColor: Colors.accent.light,
-  },
-  radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.accent.light,
-  },
-  optionText: {
+  choiceText: {
     flex: 1,
-    color: Colors.text.secondary,
+    color: Colors.text.primary,
     fontSize: 16,
     lineHeight: 24,
     fontFamily: "Inter_400Regular",
   },
-  optionTextSelected: {
+  choiceTextSelected: {
     color: Colors.accent.light,
     fontFamily: "Inter_500Medium",
   },
@@ -312,8 +286,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     padding: 24,
-    paddingTop: 40,
-    paddingBottom: 48,
+    paddingTop: 16,
+    backgroundColor: Colors.bg.primary,
   },
   cta: {
     backgroundColor: Colors.accent.primary,
@@ -326,15 +300,14 @@ const styles = StyleSheet.create({
     gap: 8,
     shadowColor: Colors.accent.primary,
     shadowOpacity: 0.3,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 8 },
   },
-  ctaDisabled: { opacity: 0.5 },
+  ctaDisabled: { opacity: 0.4 },
   ctaText: {
     color: Colors.accent.onPrimary,
-    fontSize: 14,
-    fontFamily: "Inter_500Medium",
-    fontWeight: "700",
-    letterSpacing: 0.7,
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.5,
   },
 });
