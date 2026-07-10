@@ -48,8 +48,7 @@ stitch_designs/
 /ios
 /android
 
-# large audio assets (exceed GitHub 100MB limit — host remotely or use Git LFS)
-assets/audio/
+# audio: track compressed .m4a (~3MB each); never commit huge raw .wav
 *.wav
 
 # expo runtime log

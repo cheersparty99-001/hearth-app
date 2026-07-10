@@ -6,8 +6,9 @@ import {
   ScrollView,
   Pressable,
   ImageBackground,
+  ActivityIndicator,
 } from "react-native";
-import { Audio } from "expo-av";
+import { Audio, AVPlaybackStatus } from "expo-av";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,27 +23,27 @@ interface Track {
 }
 
 const TRACKS: Track[] = [
-  { id: 1, title: "今晚你可以休息了", day: "Day 1", source: require("../../assets/audio/Day 1 今晚你可以休息了.wav") },
-  { id: 2, title: "我是安全的", day: "Day 2", source: require("../../assets/audio/Day 2 我是安全的.wav") },
-  { id: 3, title: "允许情绪存在", day: "Day 3", source: require("../../assets/audio/Day 3 允许情绪存在.wav") },
-  { id: 4, title: "放下今天", day: "Day 4", source: require("../../assets/audio/Day 4 放下今天.wav") },
-  { id: 5, title: "给自己一个拥抱", day: "Day 5", source: require("../../assets/audio/Day 5 给自己一个拥抱.wav") },
-  { id: 6, title: "我值得被爱", day: "Day 6", source: require("../../assets/audio/Day 6 我值得被爱.wav") },
-  { id: 7, title: "我的安全岛", day: "Day 7", source: require("../../assets/audio/Day 7 我的安全岛.wav") },
-  { id: 8, title: "看见委屈", day: "Day 8", source: require("../../assets/audio/Day 8 看见委屈.wav") },
-  { id: 9, title: "释放愤怒", day: "Day 9", source: require("../../assets/audio/Day 9 释放愤怒.wav") },
-  { id: 10, title: "放下责备", day: "Day 10", source: require("../../assets/audio/Day 10 放下责备.wav") },
-  { id: 11, title: "我不需要完美", day: "Day 11", source: require("../../assets/audio/Day 11 我不需要完美.wav") },
-  { id: 12, title: "被理解的感觉", day: "Day 12", source: require("../../assets/audio/Day 12 被理解的感觉.wav") },
-  { id: 13, title: "给小时候的自己", day: "Day 13", source: require("../../assets/audio/Day 13 给小时候的自己.wav") },
-  { id: 14, title: "希望正在回来", day: "Day 14", source: require("../../assets/audio/Day 14 希望正在回来.wav") },
-  { id: 15, title: "理解而不是责怪", day: "Day 15", source: require("../../assets/audio/Day 15 理解而不是责怪.wav") },
-  { id: 16, title: "我可以保护自己", day: "Day 16", source: require("../../assets/audio/Day 16 我可以保护自己.wav") },
-  { id: 17, title: "慢慢靠近", day: "Day 17", source: require("../../assets/audio/Day 17 慢慢靠近.wav") },
-  { id: 18, title: "我值得被珍惜", day: "Day 18", source: require("../../assets/audio/Day 18 我值得被珍惜.wav") },
-  { id: 19, title: "爱依然存在", day: "Day 19", source: require("../../assets/audio/Day 19 爱依然存在.wav") },
-  { id: 20, title: "未来的我", day: "Day 20", source: require("../../assets/audio/Day 20 未来的我.wav") },
-  { id: 21, title: "爱与自由", day: "Day 21", source: require("../../assets/audio/Day 21 爱与自由.wav") },
+  { id: 1, title: "You Can Rest Now", day: "Day 1", source: require("../../assets/audio/Day 1 今晚你可以休息了.m4a") },
+  { id: 2, title: "Safe in This Moment", day: "Day 2", source: require("../../assets/audio/Day 2 我是安全的.m4a") },
+  { id: 3, title: "Let Your Feelings Be", day: "Day 3", source: require("../../assets/audio/Day 3 允许情绪存在.m4a") },
+  { id: 4, title: "Gently Release the Day", day: "Day 4", source: require("../../assets/audio/Day 4 放下今天.m4a") },
+  { id: 5, title: "Hold Yourself Gently", day: "Day 5", source: require("../../assets/audio/Day 5 给自己一个拥抱.m4a") },
+  { id: 6, title: "You Are Worthy of Love", day: "Day 6", source: require("../../assets/audio/Day 6 我值得被爱.m4a") },
+  { id: 7, title: "Your Safe Harbour", day: "Day 7", source: require("../../assets/audio/Day 7 我的安全岛.m4a") },
+  { id: 8, title: "Gently Seen", day: "Day 8", source: require("../../assets/audio/Day 8 看见委屈.m4a") },
+  { id: 9, title: "Letting the Anger Soften", day: "Day 9", source: require("../../assets/audio/Day 9 释放愤怒.m4a") },
+  { id: 10, title: "Softly Setting Down Blame", day: "Day 10", source: require("../../assets/audio/Day 10 放下责备.m4a") },
+  { id: 11, title: "You Are Enough", day: "Day 11", source: require("../../assets/audio/Day 11 我不需要完美.m4a") },
+  { id: 12, title: "Softly Understood", day: "Day 12", source: require("../../assets/audio/Day 12 被理解的感觉.m4a") },
+  { id: 13, title: "A Letter to Little You", day: "Day 13", source: require("../../assets/audio/Day 13 给小时候的自己.m4a") },
+  { id: 14, title: "Hope Is Finding Its Way Back", day: "Day 14", source: require("../../assets/audio/Day 14 希望正在回来.m4a") },
+  { id: 15, title: "Meeting Yourself with Kindness", day: "Day 15", source: require("../../assets/audio/Day 15 理解而不是责怪.m4a") },
+  { id: 16, title: "You Are Safe with Yourself", day: "Day 16", source: require("../../assets/audio/Day 16 我可以保护自己.m4a") },
+  { id: 17, title: "Drawing Closer, Slowly", day: "Day 17", source: require("../../assets/audio/Day 17 慢慢靠近.m4a") },
+  { id: 18, title: "You Deserve Tenderness", day: "Day 18", source: require("../../assets/audio/Day 18 我值得被珍惜.m4a") },
+  { id: 19, title: "Love Is Still Here", day: "Day 19", source: require("../../assets/audio/Day 19 爱依然存在.m4a") },
+  { id: 20, title: "The One You're Becoming", day: "Day 20", source: require("../../assets/audio/Day 20 未来的我.m4a") },
+  { id: 21, title: "Love and Freedom", day: "Day 21", source: require("../../assets/audio/Day 21 爱与自由.m4a") },
 ];
 
 function formatTime(millis: number): string {
@@ -58,24 +59,46 @@ export default function Meditation() {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [barWidth, setBarWidth] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const soundRef = useRef<Audio.Sound | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    console.log("[AUDIO] mount → setAudioModeAsync");
     Audio.setAudioModeAsync({
       playsInSilentModeIOS: true,
       staysActiveInBackground: false,
       shouldDuckAndroid: true,
-    }).catch((e) => console.error("Audio mode error:", e));
+    })
+      .then(() => console.log("[AUDIO] audio mode set OK"))
+      .catch((e) => console.log("AUDIO ERROR (setAudioMode):", e));
 
     return () => {
+      console.log("[AUDIO] unmount → cleanup");
       if (intervalRef.current) clearInterval(intervalRef.current);
       soundRef.current
         ?.unloadAsync()
-        .catch((e) => console.error("Unload error:", e));
+        .catch((e) => console.log("AUDIO ERROR (unmount unload):", e));
     };
   }, []);
+
+  // Pushed status updates from the native player (load progress + errors)
+  const onStatusUpdate = (status: AVPlaybackStatus) => {
+    if (!status.isLoaded) {
+      if (status.error) console.log("AUDIO ERROR (status.error):", status.error);
+      return;
+    }
+    setPosition(status.positionMillis);
+    setDuration(status.durationMillis ?? 0);
+    setIsPlaying(status.isPlaying);
+    if (status.didJustFinish) {
+      console.log("[AUDIO] track finished");
+      setIsPlaying(false);
+      setPosition(0);
+    }
+  };
 
   const startPolling = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -117,41 +140,69 @@ export default function Meditation() {
   };
 
   const loadAndPlay = async (track: Track) => {
+    console.log(`[AUDIO] loadAndPlay START → ${track.day} "${track.title}"`);
+    setLoadError(null);
+    setLoading(true);
     try {
+      console.log("[AUDIO] unloading previous sound (if any)...");
       await unloadCurrent();
       setActiveTrack(track);
       setPosition(0);
       setDuration(0);
-      const { sound } = await Audio.Sound.createAsync(track.source, {
-        shouldPlay: true,
-      });
+      console.log(
+        "[AUDIO] calling createAsync (downloadFirst=FALSE, shouldPlay=true)..."
+      );
+      const { sound, status } = await Audio.Sound.createAsync(
+        track.source,
+        { shouldPlay: true },
+        onStatusUpdate,
+        /* downloadFirst */ false
+      );
+      console.log(
+        `[AUDIO] createAsync RESOLVED. isLoaded=${status.isLoaded}`,
+        status
+      );
       soundRef.current = sound;
       setIsPlaying(true);
       startPolling();
+      console.log("[AUDIO] polling started, sound stored");
     } catch (e) {
-      console.error("Load audio error:", e);
+      console.log("AUDIO ERROR (createAsync/loadAndPlay):", e);
+      setLoadError(String(e));
+    } finally {
+      setLoading(false);
     }
   };
 
   const togglePlay = async () => {
+    console.log("[AUDIO] togglePlay tapped");
     const sound = soundRef.current;
-    if (!sound) return;
+    if (!sound) {
+      console.log("[AUDIO] togglePlay: no sound loaded");
+      return;
+    }
     try {
       const status = await sound.getStatusAsync();
-      if (!status.isLoaded) return;
+      if (!status.isLoaded) {
+        console.log("[AUDIO] togglePlay: sound not loaded yet");
+        return;
+      }
       if (status.isPlaying) {
+        console.log("[AUDIO] pausing");
         await sound.pauseAsync();
         setIsPlaying(false);
       } else {
+        console.log("[AUDIO] resuming play");
         await sound.playAsync();
         setIsPlaying(true);
       }
     } catch (e) {
-      console.error("Toggle play error:", e);
+      console.log("AUDIO ERROR (togglePlay):", e);
     }
   };
 
   const onSelectTrack = (track: Track) => {
+    console.log(`[AUDIO] tapped ${track.day} (active=${activeTrack?.day})`);
     if (activeTrack?.id === track.id) {
       togglePlay();
     } else {
@@ -232,11 +283,15 @@ export default function Meditation() {
                 <Text style={styles.trackTitle} numberOfLines={1}>
                   {track.title}
                 </Text>
-                <Ionicons
-                  name={isActive && isPlaying ? "pause-circle" : "play-circle"}
-                  size={32}
-                  color="#C8813A"
-                />
+                {isActive && loading ? (
+                  <ActivityIndicator size="small" color="#C8813A" />
+                ) : (
+                  <Ionicons
+                    name={isActive && isPlaying ? "pause-circle" : "play-circle"}
+                    size={32}
+                    color="#C8813A"
+                  />
+                )}
               </Pressable>
             );
           })}
@@ -250,6 +305,15 @@ export default function Meditation() {
             {activeTrack.title}
           </Text>
           <Text style={styles.playerDay}>{activeTrack.day}</Text>
+
+          {loading ? (
+            <View style={styles.statusRow}>
+              <ActivityIndicator size="small" color="#C8813A" />
+              <Text style={styles.statusText}>Loading audio...</Text>
+            </View>
+          ) : loadError ? (
+            <Text style={styles.errorText}>Could not load audio: {loadError}</Text>
+          ) : null}
 
           <Pressable
             style={styles.progressBar}
@@ -401,5 +465,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 36,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  statusText: {
+    color: "#6A946A",
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+  },
+  errorText: {
+    color: "#E07A5F",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    marginBottom: 12,
   },
 });
