@@ -72,6 +72,7 @@ export default function Meditation() {
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [favorited, setFavorited] = useState(false);
+  const [playerOpen, setPlayerOpen] = useState(false);
 
   const soundRef = useRef<Audio.Sound | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -220,9 +221,11 @@ export default function Meditation() {
   const onSelectTrack = (track: Track) => {
     console.log(`[AUDIO] tapped ${track.day} (active=${activeTrack?.day})`);
     if (activeTrack?.id === track.id) {
-      togglePlay();
+      // Already loaded — just reopen the full-screen player, keep playing.
+      setPlayerOpen(true);
     } else {
       loadAndPlay(track);
+      setPlayerOpen(true);
     }
   };
 
@@ -265,13 +268,10 @@ export default function Meditation() {
     if (next) loadAndPlay(next);
   };
 
-  const closePlayer = async () => {
-    console.log("[AUDIO] closing player");
-    await unloadCurrent();
-    setActiveTrack(null);
-    setIsPlaying(false);
-    setPosition(0);
-    setDuration(0);
+  const closePlayer = () => {
+    // Return to the list but keep audio playing — the mini-player takes over.
+    console.log("[AUDIO] minimizing player (audio keeps playing)");
+    setPlayerOpen(false);
   };
 
   const progressRatio = duration > 0 ? position / duration : 0;
@@ -287,7 +287,7 @@ export default function Meditation() {
   const dotY = ART / 2 + RING_R * Math.sin(dotAngle);
 
   // ---- Full-screen player ----
-  if (activeTrack) {
+  if (activeTrack && playerOpen) {
     return (
       <View style={styles.root}>
         <StatusBar style="light" />
@@ -475,26 +475,66 @@ export default function Meditation() {
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            activeTrack ? styles.contentWithMini : null,
+          ]}
           showsVerticalScrollIndicator={false}
         >
-          {TRACKS.map((track) => (
-            <Pressable
-              key={track.id}
-              style={styles.card}
-              onPress={() => onSelectTrack(track)}
-            >
-              <View style={styles.dayBadge}>
-                <Text style={styles.dayBadgeText}>{track.day}</Text>
-              </View>
-              <Text style={styles.trackTitle} numberOfLines={1}>
-                {track.title}
-              </Text>
-              <Ionicons name="play-circle" size={32} color="#C8813A" />
-            </Pressable>
-          ))}
+          {TRACKS.map((track) => {
+            const isActive = activeTrack?.id === track.id;
+            return (
+              <Pressable
+                key={track.id}
+                style={[styles.card, isActive && styles.cardActive]}
+                onPress={() => onSelectTrack(track)}
+              >
+                <View style={styles.dayBadge}>
+                  <Text style={styles.dayBadgeText}>{track.day}</Text>
+                </View>
+                <Text style={styles.trackTitle} numberOfLines={1}>
+                  {track.title}
+                </Text>
+                <Ionicons
+                  name={isActive && isPlaying ? "pause-circle" : "play-circle"}
+                  size={32}
+                  color="#C8813A"
+                />
+              </Pressable>
+            );
+          })}
         </ScrollView>
       </SafeAreaView>
+
+      {/* Persistent mini-player (Spotify-style) */}
+      {activeTrack && (
+        <Pressable style={styles.miniPlayer} onPress={() => setPlayerOpen(true)}>
+          <View style={styles.miniProgressTrack}>
+            <View
+              style={[styles.miniProgressFill, { width: `${progressRatio * 100}%` }]}
+            />
+          </View>
+          <View style={styles.miniRow}>
+            <Image
+              source={require("../../assets/images/meditation-bg.png")}
+              style={styles.miniThumb}
+            />
+            <View style={styles.miniInfo}>
+              <Text style={styles.miniTitle} numberOfLines={1}>
+                {activeTrack.title}
+              </Text>
+              <Text style={styles.miniDay}>{activeTrack.day}</Text>
+            </View>
+            <Pressable onPress={togglePlay} hitSlop={12} style={styles.miniPlayBtn}>
+              <Ionicons
+                name={isPlaying ? "pause" : "play"}
+                size={28}
+                color="#C8813A"
+              />
+            </Pressable>
+          </View>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -705,5 +745,61 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     textAlign: "center",
     marginBottom: 12,
+  },
+
+  // ---- Mini-player ----
+  contentWithMini: {
+    paddingBottom: 96,
+  },
+  miniPlayer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 64,
+    backgroundColor: "#1E3A1E",
+    borderTopWidth: 1,
+    borderTopColor: "#2A4A2A",
+  },
+  miniProgressTrack: {
+    height: 2,
+    width: "100%",
+    backgroundColor: "#2A4A2A",
+  },
+  miniProgressFill: {
+    height: "100%",
+    backgroundColor: "#C8813A",
+  },
+  miniRow: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    gap: 12,
+  },
+  miniThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  miniInfo: {
+    flex: 1,
+  },
+  miniTitle: {
+    color: "#E8F0E8",
+    fontSize: 15,
+    fontFamily: "Lora_600SemiBold",
+    marginBottom: 1,
+  },
+  miniDay: {
+    color: "#6A946A",
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+  },
+  miniPlayBtn: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
