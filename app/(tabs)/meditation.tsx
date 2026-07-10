@@ -6,13 +6,15 @@ import {
   ScrollView,
   Pressable,
   ImageBackground,
+  Image,
   ActivityIndicator,
 } from "react-native";
 import { Audio, AVPlaybackStatus } from "expo-av";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import Svg, { Circle } from "react-native-svg";
 import { Colors } from "../../constants/colors";
 
 interface Track {
@@ -46,6 +48,14 @@ const TRACKS: Track[] = [
   { id: 21, title: "Love and Freedom", day: "Day 21", source: require("../../assets/audio/Day 21 爱与自由.m4a") },
 ];
 
+const TRACK_DESCRIPTION = "A gentle journey back to yourself.";
+
+// Circular art dimensions
+const ART = 260;
+const STROKE = 4;
+const RING_R = (ART - STROKE) / 2; // radius of the progress ring
+const RING_C = 2 * Math.PI * RING_R;
+
 function formatTime(millis: number): string {
   const totalSeconds = Math.floor(millis / 1000);
   const minutes = Math.floor(totalSeconds / 60);
@@ -61,6 +71,7 @@ export default function Meditation() {
   const [barWidth, setBarWidth] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [favorited, setFavorited] = useState(false);
 
   const soundRef = useRef<Audio.Sound | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -227,26 +238,222 @@ export default function Meditation() {
     }
   };
 
-  const skipBack = async () => {
+  // Skip forward/back within the current track by a number of milliseconds.
+  const seekBy = async (deltaMs: number) => {
     const sound = soundRef.current;
     if (!sound) return;
+    const target = Math.max(0, Math.min(duration || 0, position + deltaMs));
     try {
-      await sound.setPositionAsync(0);
-      setPosition(0);
+      await sound.setPositionAsync(target);
+      setPosition(target);
     } catch (e) {
-      console.error("Skip back error:", e);
+      console.log("AUDIO ERROR (seekBy):", e);
     }
   };
 
-  const skipForward = () => {
+  const prevTrack = () => {
+    if (!activeTrack) return;
+    const idx = TRACKS.findIndex((t) => t.id === activeTrack.id);
+    const prev = TRACKS[idx - 1];
+    if (prev) loadAndPlay(prev);
+  };
+
+  const nextTrack = () => {
     if (!activeTrack) return;
     const idx = TRACKS.findIndex((t) => t.id === activeTrack.id);
     const next = TRACKS[idx + 1];
     if (next) loadAndPlay(next);
   };
 
-  const progressRatio = duration > 0 ? position / duration : 0;
+  const closePlayer = async () => {
+    console.log("[AUDIO] closing player");
+    await unloadCurrent();
+    setActiveTrack(null);
+    setIsPlaying(false);
+    setPosition(0);
+    setDuration(0);
+  };
 
+  const progressRatio = duration > 0 ? position / duration : 0;
+  const currentIndex = activeTrack
+    ? TRACKS.findIndex((t) => t.id === activeTrack.id)
+    : -1;
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < TRACKS.length - 1;
+
+  // Position of the amber dot on the progress ring (starts at top, -90deg).
+  const dotAngle = (progressRatio * 360 - 90) * (Math.PI / 180);
+  const dotX = ART / 2 + RING_R * Math.cos(dotAngle);
+  const dotY = ART / 2 + RING_R * Math.sin(dotAngle);
+
+  // ---- Full-screen player ----
+  if (activeTrack) {
+    return (
+      <View style={styles.root}>
+        <StatusBar style="light" />
+        <LinearGradient
+          colors={["#142014", "#0D1A0D"]}
+          style={StyleSheet.absoluteFill}
+        />
+        <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
+          {/* Top bar */}
+          <View style={styles.playerTopBar}>
+            <Pressable onPress={closePlayer} hitSlop={12}>
+              <Ionicons name="arrow-back" size={24} color="#D4E8D4" />
+            </Pressable>
+            <Text style={styles.topBarLabel}>GUIDED MEDITATION</Text>
+            <View style={styles.topBarRight}>
+              <Pressable onPress={() => setFavorited((f) => !f)} hitSlop={10}>
+                <Ionicons
+                  name={favorited ? "heart" : "heart-outline"}
+                  size={22}
+                  color={favorited ? "#C8813A" : "#6A946A"}
+                />
+              </Pressable>
+              <Pressable hitSlop={10}>
+                <Ionicons name="ellipsis-vertical" size={20} color="#6A946A" />
+              </Pressable>
+            </View>
+          </View>
+
+          <ScrollView
+            contentContainerStyle={styles.playerContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Circular album art with progress ring */}
+            <View style={styles.artWrap}>
+              <Image
+                source={require("../../assets/images/meditation-bg.png")}
+                style={styles.artImage}
+              />
+              <Svg width={ART} height={ART} style={StyleSheet.absoluteFill}>
+                {/* Track (background) ring */}
+                <Circle
+                  cx={ART / 2}
+                  cy={ART / 2}
+                  r={RING_R}
+                  stroke="rgba(30,58,30,0.9)"
+                  strokeWidth={STROKE}
+                  fill="none"
+                />
+                {/* Progress arc */}
+                <Circle
+                  cx={ART / 2}
+                  cy={ART / 2}
+                  r={RING_R}
+                  stroke="#C8813A"
+                  strokeWidth={STROKE}
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={RING_C}
+                  strokeDashoffset={RING_C * (1 - progressRatio)}
+                  transform={`rotate(-90 ${ART / 2} ${ART / 2})`}
+                />
+                {/* Position dot */}
+                <Circle cx={dotX} cy={dotY} r={7} fill="#F0C089" />
+                <Circle cx={dotX} cy={dotY} r={4} fill="#C8813A" />
+              </Svg>
+              {loading && (
+                <View style={styles.artLoading}>
+                  <ActivityIndicator size="large" color="#C8813A" />
+                </View>
+              )}
+            </View>
+
+            {/* Title + description */}
+            <Text style={styles.playerBigTitle}>{activeTrack.title}</Text>
+            <Text style={styles.playerDescription}>{TRACK_DESCRIPTION}</Text>
+
+            {/* Track counter + repeated title */}
+            <Text style={styles.trackCounter}>
+              Track {currentIndex + 1} of {TRACKS.length}
+            </Text>
+            <Text style={styles.playerChapterTitle}>{activeTrack.title}</Text>
+
+            {loadError ? (
+              <Text style={styles.errorText}>
+                Could not load audio: {loadError}
+              </Text>
+            ) : null}
+
+            {/* Linear progress */}
+            <Pressable
+              style={styles.progressBar}
+              onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
+              onPress={(e) => seek(e.nativeEvent.locationX)}
+            >
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${progressRatio * 100}%` },
+                ]}
+              />
+            </Pressable>
+            <View style={styles.timeRow}>
+              <Text style={styles.timeText}>{formatTime(position)}</Text>
+              <Text style={styles.timeText}>{formatTime(duration)}</Text>
+            </View>
+
+            {/* Controls */}
+            <View style={styles.controls}>
+              <Pressable onPress={() => seekBy(-10000)} hitSlop={10}>
+                <MaterialIcons name="replay-10" size={30} color="#D4E8D4" />
+              </Pressable>
+              <Pressable
+                onPress={prevTrack}
+                hitSlop={10}
+                disabled={!hasPrev}
+                style={!hasPrev && styles.ctrlDisabled}
+              >
+                <Ionicons name="play-skip-back" size={28} color="#D4E8D4" />
+              </Pressable>
+              <Pressable style={styles.playCircle} onPress={togglePlay}>
+                {loading ? (
+                  <ActivityIndicator color="#0D1A0D" />
+                ) : (
+                  <Ionicons
+                    name={isPlaying ? "pause" : "play"}
+                    size={32}
+                    color="#0D1A0D"
+                    style={isPlaying ? undefined : { marginLeft: 3 }}
+                  />
+                )}
+              </Pressable>
+              <Pressable
+                onPress={nextTrack}
+                hitSlop={10}
+                disabled={!hasNext}
+                style={!hasNext && styles.ctrlDisabled}
+              >
+                <Ionicons name="play-skip-forward" size={28} color="#D4E8D4" />
+              </Pressable>
+              <Pressable onPress={() => seekBy(10000)} hitSlop={10}>
+                <MaterialIcons name="forward-10" size={30} color="#D4E8D4" />
+              </Pressable>
+            </View>
+
+            {/* Bottom actions (visual placeholders) */}
+            <View style={styles.actionRow}>
+              <View style={styles.actionItem}>
+                <Ionicons name="download-outline" size={24} color="#D4E8D4" />
+                <Text style={styles.actionLabel}>Download</Text>
+              </View>
+              <View style={styles.actionItem}>
+                <Ionicons name="list" size={24} color="#D4E8D4" />
+                <Text style={styles.actionLabel}>Playlist</Text>
+              </View>
+              <View style={styles.actionItem}>
+                <Ionicons name="timer-outline" size={24} color="#D4E8D4" />
+                <Text style={styles.actionLabel}>Timer</Text>
+              </View>
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  // ---- Track list ----
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
@@ -268,90 +475,26 @@ export default function Meditation() {
         </View>
 
         <ScrollView
-          contentContainerStyle={[
-            styles.content,
-            activeTrack ? styles.contentWithPlayer : null,
-          ]}
+          contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {TRACKS.map((track) => {
-            const isActive = activeTrack?.id === track.id;
-            return (
-              <Pressable
-                key={track.id}
-                style={[styles.card, isActive && styles.cardActive]}
-                onPress={() => onSelectTrack(track)}
-              >
-                <View style={styles.dayBadge}>
-                  <Text style={styles.dayBadgeText}>{track.day}</Text>
-                </View>
-                <Text style={styles.trackTitle} numberOfLines={1}>
-                  {track.title}
-                </Text>
-                {isActive && loading ? (
-                  <ActivityIndicator size="small" color="#C8813A" />
-                ) : (
-                  <Ionicons
-                    name={isActive && isPlaying ? "pause-circle" : "play-circle"}
-                    size={32}
-                    color="#C8813A"
-                  />
-                )}
-              </Pressable>
-            );
-          })}
+          {TRACKS.map((track) => (
+            <Pressable
+              key={track.id}
+              style={styles.card}
+              onPress={() => onSelectTrack(track)}
+            >
+              <View style={styles.dayBadge}>
+                <Text style={styles.dayBadgeText}>{track.day}</Text>
+              </View>
+              <Text style={styles.trackTitle} numberOfLines={1}>
+                {track.title}
+              </Text>
+              <Ionicons name="play-circle" size={32} color="#C8813A" />
+            </Pressable>
+          ))}
         </ScrollView>
       </SafeAreaView>
-
-      {/* Bottom player sheet */}
-      {activeTrack && (
-        <View style={styles.playerSheet}>
-          <Text style={styles.playerTitle} numberOfLines={1}>
-            {activeTrack.title}
-          </Text>
-          <Text style={styles.playerDay}>{activeTrack.day}</Text>
-
-          {loading ? (
-            <View style={styles.statusRow}>
-              <ActivityIndicator size="small" color="#C8813A" />
-              <Text style={styles.statusText}>Loading audio...</Text>
-            </View>
-          ) : loadError ? (
-            <Text style={styles.errorText}>Could not load audio: {loadError}</Text>
-          ) : null}
-
-          <Pressable
-            style={styles.progressBar}
-            onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
-            onPress={(e) => seek(e.nativeEvent.locationX)}
-          >
-            <View
-              style={[styles.progressFill, { width: `${progressRatio * 100}%` }]}
-            />
-          </Pressable>
-
-          <View style={styles.timeRow}>
-            <Text style={styles.timeText}>{formatTime(position)}</Text>
-            <Text style={styles.timeText}>{formatTime(duration)}</Text>
-          </View>
-
-          <View style={styles.controls}>
-            <Pressable onPress={skipBack} hitSlop={12}>
-              <Ionicons name="play-skip-back" size={28} color="#C8813A" />
-            </Pressable>
-            <Pressable onPress={togglePlay} hitSlop={12}>
-              <Ionicons
-                name={isPlaying ? "pause-circle" : "play-circle"}
-                size={64}
-                color="#C8813A"
-              />
-            </Pressable>
-            <Pressable onPress={skipForward} hitSlop={12}>
-              <Ionicons name="play-skip-forward" size={28} color="#C8813A" />
-            </Pressable>
-          </View>
-        </View>
-      )}
     </View>
   );
 }
@@ -382,9 +525,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 40,
     gap: 12,
-  },
-  contentWithPlayer: {
-    paddingBottom: 220,
   },
 
   card: {
@@ -417,33 +557,88 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_500Medium",
   },
 
-  playerSheet: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#0F1F0F",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 24,
-    paddingTop: 20,
+  // ---- Player ----
+  playerTopBar: {
+    height: 56,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  topBarLabel: {
+    color: "#6A946A",
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    letterSpacing: 2,
+  },
+  topBarRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 18,
+  },
+  playerContent: {
+    paddingHorizontal: 28,
+    paddingTop: 12,
     paddingBottom: 32,
-    borderTopWidth: 1,
-    borderColor: "#2A4A2A",
+    alignItems: "center",
   },
-  playerTitle: {
+  artWrap: {
+    width: ART,
+    height: ART,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 12,
+    marginBottom: 36,
+    shadowColor: "#C8813A",
+    shadowOpacity: 0.35,
+    shadowRadius: 40,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  artImage: {
+    position: "absolute",
+    top: 18,
+    left: 18,
+    width: ART - 36,
+    height: ART - 36,
+    borderRadius: (ART - 36) / 2,
+  },
+  artLoading: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  playerBigTitle: {
     color: "#E8F0E8",
-    fontSize: 18,
-    fontFamily: "Lora_600SemiBold",
-    marginBottom: 2,
+    fontSize: 26,
+    fontFamily: "Lora_700Bold",
+    textAlign: "center",
+    marginBottom: 8,
   },
-  playerDay: {
+  playerDescription: {
+    color: "#D4E8D4",
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 28,
+    maxWidth: 300,
+  },
+  trackCounter: {
     color: "#6A946A",
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    marginBottom: 16,
+    fontFamily: "Inter_500Medium",
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  playerChapterTitle: {
+    color: "#C8B896",
+    fontSize: 18,
+    fontFamily: "Lora_600SemiBold",
+    textAlign: "center",
+    marginBottom: 28,
   },
   progressBar: {
+    width: "100%",
     height: 4,
     backgroundColor: "#1E3A1E",
     borderRadius: 2,
@@ -456,36 +651,59 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   timeRow: {
+    width: "100%",
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 28,
   },
   timeText: {
     color: "#6A946A",
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: "Inter_400Regular",
   },
   controls: {
+    width: "100%",
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 4,
+    marginBottom: 40,
+  },
+  ctrlDisabled: { opacity: 0.3 },
+  playCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#C8813A",
     alignItems: "center",
     justifyContent: "center",
-    gap: 36,
+    shadowColor: "#C8813A",
+    shadowOpacity: 0.5,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
   },
-  statusRow: {
+  actionRow: {
+    width: "100%",
     flexDirection: "row",
+    justifyContent: "space-around",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(42,74,42,0.5)",
+    paddingTop: 24,
+  },
+  actionItem: {
     alignItems: "center",
     gap: 8,
-    marginBottom: 12,
   },
-  statusText: {
+  actionLabel: {
     color: "#6A946A",
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: "Inter_400Regular",
   },
   errorText: {
     color: "#E07A5F",
     fontSize: 12,
     fontFamily: "Inter_400Regular",
+    textAlign: "center",
     marginBottom: 12,
   },
 });
