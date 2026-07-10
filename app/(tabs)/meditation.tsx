@@ -84,8 +84,10 @@ export default function Meditation() {
     };
   }, []);
 
-  // Pushed status updates from the native player (load progress + errors)
-  const onStatusUpdate = (status: AVPlaybackStatus) => {
+  // Pushed status updates from the native player (load progress + errors).
+  // `track` is bound at load time so the finish handler knows which track
+  // ended (component state would be stale inside this native callback).
+  const handleStatus = (status: AVPlaybackStatus, track: Track) => {
     if (!status.isLoaded) {
       if (status.error) console.log("AUDIO ERROR (status.error):", status.error);
       return;
@@ -94,9 +96,17 @@ export default function Meditation() {
     setDuration(status.durationMillis ?? 0);
     setIsPlaying(status.isPlaying);
     if (status.didJustFinish) {
-      console.log("[AUDIO] track finished");
-      setIsPlaying(false);
-      setPosition(0);
+      console.log(`[AUDIO] finished ${track.day} "${track.title}"`);
+      const currentIndex = TRACKS.findIndex((t) => t.id === track.id);
+      const next = TRACKS[currentIndex + 1];
+      if (next) {
+        console.log(`[AUDIO] auto-advancing to ${next.day} "${next.title}"`);
+        loadAndPlay(next);
+      } else {
+        console.log("[AUDIO] last track finished — stopping (no loop)");
+        setIsPlaying(false);
+        setPosition(0);
+      }
     }
   };
 
@@ -111,12 +121,7 @@ export default function Meditation() {
           setPosition(status.positionMillis);
           setDuration(status.durationMillis ?? 0);
           setIsPlaying(status.isPlaying);
-          if (status.didJustFinish) {
-            setIsPlaying(false);
-            setPosition(0);
-            await sound.setPositionAsync(0);
-            await sound.pauseAsync();
-          }
+          // Track-finish (and auto-advance) is handled in handleStatus.
         }
       } catch (e) {
         console.error("Status poll error:", e);
@@ -155,7 +160,7 @@ export default function Meditation() {
       const { sound, status } = await Audio.Sound.createAsync(
         track.source,
         { shouldPlay: true },
-        onStatusUpdate,
+        (st) => handleStatus(st, track),
         /* downloadFirst */ false
       );
       console.log(
