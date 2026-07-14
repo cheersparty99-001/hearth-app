@@ -6,7 +6,11 @@ import {
   ScrollView,
   Pressable,
   Alert,
+  Modal,
+  TextInput,
+  Linking,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,24 +20,33 @@ import { supabase } from "../../lib/supabase";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
-type StatItem = { value: number; label: string; icon: IoniconName };
+// TODO: replace with your real hosted legal pages before store submission.
+const PRIVACY_URL = "https://hearth.app/privacy";
+const TERMS_URL = "https://hearth.app/terms";
+
+type StatItem = {
+  value: number;
+  label: string;
+  icon: IoniconName;
+  route: "/(tabs)/crossroads" | "/(tabs)/insight" | "/(tabs)/chat";
+};
 
 export default function Profile() {
+  const router = useRouter();
   const { user, signOut } = useAuth();
   const [name, setName] = useState<string>("Friend");
   const [crossroadsCount, setCrossroadsCount] = useState(0);
   const [chatCount, setChatCount] = useState(0);
   const [insightCount, setInsightCount] = useState(0);
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
       const [{ data: profile }, answers, chats, insights] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("name")
-          .eq("id", user.id)
-          .maybeSingle(),
+        supabase.from("profiles").select("name").eq("id", user.id).maybeSingle(),
         supabase
           .from("crossroads_answers")
           .select("question_id", { count: "exact", head: true })
@@ -55,6 +68,43 @@ export default function Profile() {
     })();
   }, [user]);
 
+  const openEditName = () => {
+    setDraftName(name);
+    setEditing(true);
+  };
+
+  const saveName = async () => {
+    const trimmed = draftName.trim();
+    if (!trimmed || !user) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ id: user.id, name: trimmed });
+    setSaving(false);
+    if (error) {
+      Alert.alert("Could not save", error.message);
+      return;
+    }
+    setName(trimmed);
+    setEditing(false);
+  };
+
+  const openUrl = async (url: string) => {
+    const ok = await Linking.canOpenURL(url);
+    if (ok) Linking.openURL(url);
+    else Alert.alert("Link unavailable", url);
+  };
+
+  const showAbout = () => {
+    Alert.alert(
+      "Hearth v1.0",
+      "A quiet space for reflection and gentle self-understanding. Your reflections and conversations remain private to you."
+    );
+  };
+
   const confirmSignOut = () => {
     Alert.alert("Sign out?", "You can sign back in anytime.", [
       { text: "Cancel", style: "cancel" },
@@ -63,9 +113,9 @@ export default function Profile() {
   };
 
   const stats: StatItem[] = [
-    { value: crossroadsCount, label: "Questions", icon: "book" },
-    { value: insightCount, label: "Insights", icon: "bulb" },
-    { value: chatCount, label: "Messages", icon: "chatbubbles" },
+    { value: crossroadsCount, label: "Questions", icon: "book", route: "/(tabs)/crossroads" },
+    { value: insightCount, label: "Insights", icon: "bulb", route: "/(tabs)/insight" },
+    { value: chatCount, label: "Messages", icon: "chatbubbles", route: "/(tabs)/chat" },
   ];
 
   return (
@@ -73,20 +123,10 @@ export default function Profile() {
       <StatusBar style="light" />
       <SafeAreaView style={styles.safe} edges={["top"]}>
         <View style={styles.header}>
-          <Pressable hitSlop={10}>
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color={Colors.accent.light}
-            />
-          </Pressable>
+          <View style={{ width: 24 }} />
           <Text style={styles.headerBrand}>Hearth</Text>
-          <Pressable hitSlop={10}>
-            <Ionicons
-              name="settings-outline"
-              size={22}
-              color={Colors.text.secondary}
-            />
+          <Pressable hitSlop={10} onPress={openEditName}>
+            <Ionicons name="create-outline" size={22} color={Colors.text.secondary} />
           </Pressable>
         </View>
 
@@ -97,14 +137,13 @@ export default function Profile() {
           <View style={styles.profileBlock}>
             <View style={styles.avatarOuter}>
               <View style={styles.avatarInner}>
-                <Ionicons
-                  name="person"
-                  size={40}
-                  color={Colors.accent.light}
-                />
+                <Ionicons name="person" size={40} color={Colors.accent.light} />
               </View>
             </View>
-            <Text style={styles.name}>{name}</Text>
+            <Pressable style={styles.nameRow} onPress={openEditName}>
+              <Text style={styles.name}>{name}</Text>
+              <Ionicons name="pencil" size={16} color={Colors.text.secondary} />
+            </Pressable>
             <Text style={styles.email}>{user?.email ?? ""}</Text>
           </View>
 
@@ -116,27 +155,41 @@ export default function Profile() {
 
           <View style={styles.statsRow}>
             {stats.map((s) => (
-              <View key={s.label} style={styles.statCard}>
-                <Ionicons
-                  name={s.icon}
-                  size={18}
-                  color={Colors.accent.light}
-                />
+              <Pressable
+                key={s.label}
+                style={styles.statCard}
+                onPress={() => router.push(s.route)}
+              >
+                <Ionicons name={s.icon} size={18} color={Colors.accent.light} />
                 <Text style={styles.statValue}>{s.value}</Text>
                 <Text style={styles.statLabel}>{s.label}</Text>
-              </View>
+              </Pressable>
             ))}
           </View>
 
           <Text style={styles.sectionTitle}>Settings</Text>
           <View style={styles.menuCard}>
-            <MenuRow icon="notifications-outline" label="Notifications" />
+            <MenuRow
+              icon="notifications-outline"
+              label="Notifications"
+              onPress={() =>
+                Alert.alert("Notifications", "Reminders are coming soon.")
+              }
+            />
             <Divider />
-            <MenuRow icon="shield" label="Privacy" />
+            <MenuRow
+              icon="shield"
+              label="Privacy Policy"
+              onPress={() => openUrl(PRIVACY_URL)}
+            />
             <Divider />
-            <MenuRow icon="leaf" label="Environment" trailing="Fireside" />
+            <MenuRow
+              icon="document-text-outline"
+              label="Terms of Service"
+              onPress={() => openUrl(TERMS_URL)}
+            />
             <Divider />
-            <MenuRow icon="bulb" label="About Hearth" />
+            <MenuRow icon="bulb" label="About Hearth" onPress={showAbout} />
           </View>
 
           <View style={styles.aboutCard}>
@@ -158,6 +211,36 @@ export default function Profile() {
           </Pressable>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Edit name modal */}
+      <Modal visible={editing} transparent animationType="fade" onRequestClose={() => setEditing(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setEditing(false)}>
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <Text style={styles.modalTitle}>Your name</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={draftName}
+              onChangeText={setDraftName}
+              placeholder="How should we call you?"
+              placeholderTextColor={Colors.text.muted}
+              autoFocus
+              maxLength={40}
+            />
+            <View style={styles.modalActions}>
+              <Pressable style={styles.modalCancel} onPress={() => setEditing(false)}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={styles.modalSave}
+                onPress={saveName}
+                disabled={saving}
+              >
+                <Text style={styles.modalSaveText}>{saving ? "Saving..." : "Save"}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -166,24 +249,22 @@ function MenuRow({
   icon,
   label,
   trailing,
+  onPress,
 }: {
   icon: IoniconName;
   label: string;
   trailing?: string;
+  onPress?: () => void;
 }) {
   return (
-    <Pressable style={styles.menuRow}>
+    <Pressable style={styles.menuRow} onPress={onPress}>
       <View style={styles.menuIcon}>
         <Ionicons name={icon} size={18} color={Colors.accent.light} />
       </View>
       <Text style={styles.menuLabel}>{label}</Text>
       <View style={{ flex: 1 }} />
       {trailing && <Text style={styles.menuTrailing}>{trailing}</Text>}
-      <Ionicons
-        name="chevron-forward"
-        size={18}
-        color={Colors.text.secondary}
-      />
+      <Ionicons name="chevron-forward" size={18} color={Colors.text.secondary} />
     </Pressable>
   );
 }
@@ -238,6 +319,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 20,
     shadowOffset: { width: 0, height: 0 },
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   name: {
     color: Colors.text.primary,
@@ -373,5 +459,65 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "DMSans_500Medium",
     letterSpacing: 0.5,
+  },
+
+  // Edit-name modal
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+  },
+  modalCard: {
+    width: "100%",
+    backgroundColor: Colors.bg.card,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 24,
+  },
+  modalTitle: {
+    color: Colors.text.primary,
+    fontSize: 20,
+    fontFamily: "Literata_600SemiBold",
+    marginBottom: 16,
+  },
+  modalInput: {
+    backgroundColor: Colors.bg.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: Colors.text.primary,
+    fontSize: 16,
+    fontFamily: "DMSans_400Regular",
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+  },
+  modalCancel: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+  },
+  modalCancelText: {
+    color: Colors.text.secondary,
+    fontSize: 15,
+    fontFamily: "DMSans_500Medium",
+  },
+  modalSave: {
+    backgroundColor: Colors.accent.primary,
+    borderRadius: 9999,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  modalSaveText: {
+    color: Colors.accent.onPrimary,
+    fontSize: 15,
+    fontFamily: "DMSans_600SemiBold",
   },
 });
