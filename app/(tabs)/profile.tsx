@@ -35,7 +35,7 @@ export default function Profile() {
           .eq("id", user.id)
           .maybeSingle(),
         supabase
-          .from("profiler_answers")
+          .from("crossroads_answers")
           .select("question_id", { count: "exact", head: true })
           .eq("user_id", user.id),
         supabase

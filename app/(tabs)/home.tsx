@@ -40,7 +40,7 @@ export default function Home() {
           .eq("id", user.id)
           .maybeSingle(),
         supabase
-          .from("profiler_answers")
+          .from("crossroads_answers")
           .select("question_id")
           .eq("user_id", user.id),
       ]);

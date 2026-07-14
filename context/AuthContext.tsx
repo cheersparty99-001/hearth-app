@@ -13,7 +13,11 @@ interface AuthState {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (
+    email: string,
+    password: string
+  ) => Promise<{ error: string | null; needsConfirmation: boolean }>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -51,12 +55,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
     });
-    if (error) return { error: error.message };
-    return { error: null };
+    if (error) return { error: error.message, needsConfirmation: false };
+    // When email confirmation is required, no session is returned yet.
+    return { error: null, needsConfirmation: !data.session };
+  };
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+    return { error: error?.message ?? null };
   };
 
   const signOut = async () => {
@@ -70,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       signIn,
       signUp,
+      resetPassword,
       signOut,
     }),
     [session, loading]

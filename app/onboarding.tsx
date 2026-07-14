@@ -25,7 +25,7 @@ const { width } = Dimensions.get("window");
 
 export default function Onboarding() {
   const router = useRouter();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword } = useAuth();
   const scrollRef = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
   const [mode, setMode] = useState<"signup" | "signin">("signup");
@@ -52,16 +52,45 @@ export default function Onboarding() {
       return;
     }
     setSubmitting(true);
-    const { error } =
-      mode === "signup"
-        ? await signUp(email, password)
-        : await signIn(email, password);
+    if (mode === "signup") {
+      const { error, needsConfirmation } = await signUp(email, password);
+      setSubmitting(false);
+      if (error) {
+        Alert.alert("Sign up failed", error);
+        return;
+      }
+      if (needsConfirmation) {
+        Alert.alert(
+          "Confirm your email",
+          "We sent a confirmation link to your inbox. Confirm it, then sign in."
+        );
+        setMode("signin");
+        setPassword("");
+        return;
+      }
+      router.replace("/(tabs)/home");
+      return;
+    }
+
+    const { error } = await signIn(email, password);
     setSubmitting(false);
     if (error) {
-      Alert.alert(mode === "signup" ? "Sign up failed" : "Sign in failed", error);
+      Alert.alert("Sign in failed", error);
       return;
     }
     router.replace("/(tabs)/home");
+  };
+
+  const onForgotPassword = async () => {
+    if (!email) {
+      Alert.alert("Enter your email", "Type your email above, then tap reset.");
+      return;
+    }
+    const { error } = await resetPassword(email);
+    Alert.alert(
+      error ? "Could not send reset" : "Check your email",
+      error ?? "We sent a password reset link to your inbox."
+    );
   };
 
   return (
@@ -97,8 +126,8 @@ export default function Onboarding() {
           <Ionicons name="trail-sign" size={72} color={Colors.accent.primary} style={{ marginBottom: 24 }} />
           <Text style={styles.slideTitle}>Discover Your Path</Text>
           <Text style={styles.slideBody}>
-            Answer five life scenarios to reveal your inner patterns. Quiet
-            insight awaits.
+            Answer fifteen brief questions to map your wellness landscape.
+            Quiet insight awaits.
           </Text>
           <Pressable style={styles.nextBtn} onPress={() => goTo(1)}>
             <Text style={styles.nextBtnText}>Next</Text>
@@ -173,6 +202,12 @@ export default function Onboarding() {
                   : "Create an account."}
               </Text>
             </Pressable>
+
+            {mode === "signin" && (
+              <Pressable onPress={onForgotPassword}>
+                <Text style={styles.forgot}>Forgot password?</Text>
+              </Pressable>
+            )}
           </View>
         </KeyboardAvoidingView>
       </ScrollView>
@@ -256,6 +291,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     marginTop: 16,
+    fontFamily: "DMSans_400Regular",
+  },
+  forgot: {
+    color: Colors.text.muted,
+    fontSize: 13,
+    textAlign: "center",
+    marginTop: 12,
     fontFamily: "DMSans_400Regular",
   },
 });

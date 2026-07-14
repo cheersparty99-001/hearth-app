@@ -320,6 +320,10 @@ export default function Chat() {
             </ScrollView>
 
             <View style={styles.inputShell}>
+              <Text style={styles.disclaimer}>
+                Ember offers support, not therapy. In crisis, contact
+                Befrienders MY 03-7627 2929.
+              </Text>
               <View style={styles.inputBar}>
                 <TextInput
                   style={styles.input}
@@ -516,8 +520,16 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.borderSoft,
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 12,
     paddingBottom: 16,
+  },
+  disclaimer: {
+    color: Colors.text.muted,
+    fontSize: 10,
+    lineHeight: 14,
+    textAlign: "center",
+    fontFamily: "DMSans_400Regular",
+    marginBottom: 10,
   },
   inputBar: {
     flexDirection: "row",
