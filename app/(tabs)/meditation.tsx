@@ -323,7 +323,7 @@ export default function Meditation() {
             {/* Circular album art with progress ring */}
             <View style={styles.artWrap}>
               <Image
-                source={require("../../assets/images/meditation-bg.png")}
+                source={require("../../assets/images/meditation-dusk.png")}
                 style={styles.artImage}
               />
               <Svg width={ART} height={ART} style={StyleSheet.absoluteFill}>
@@ -458,7 +458,7 @@ export default function Meditation() {
     <View style={styles.root}>
       <StatusBar style="light" />
       <ImageBackground
-        source={require("../../assets/images/meditation-bg.png")}
+        source={require("../../assets/images/meditation-dusk.png")}
         style={StyleSheet.absoluteFill}
         imageStyle={styles.bgImage}
       />
@@ -516,7 +516,7 @@ export default function Meditation() {
           </View>
           <View style={styles.miniRow}>
             <Image
-              source={require("../../assets/images/meditation-bg.png")}
+              source={require("../../assets/images/meditation-dusk.png")}
               style={styles.miniThumb}
             />
             <View style={styles.miniInfo}>
@@ -552,13 +552,13 @@ const styles = StyleSheet.create({
   title: {
     color: "#E8F0E8",
     fontSize: 28,
-    fontFamily: "Lora_700Bold",
+    fontFamily: "Literata_700Bold",
     marginBottom: 4,
   },
   subtitle: {
     color: "#D4E8D4",
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
 
   content: {
@@ -588,13 +588,13 @@ const styles = StyleSheet.create({
   dayBadgeText: {
     color: "#C8813A",
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
   trackTitle: {
     flex: 1,
     color: "#E8F0E8",
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
 
   // ---- Player ----
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
   topBarLabel: {
     color: "#6A946A",
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     letterSpacing: 2,
   },
   topBarRight: {
@@ -650,14 +650,14 @@ const styles = StyleSheet.create({
   playerBigTitle: {
     color: "#E8F0E8",
     fontSize: 26,
-    fontFamily: "Lora_700Bold",
+    fontFamily: "Literata_700Bold",
     textAlign: "center",
     marginBottom: 8,
   },
   playerDescription: {
     color: "#D4E8D4",
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 28,
@@ -666,14 +666,14 @@ const styles = StyleSheet.create({
   trackCounter: {
     color: "#6A946A",
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     textAlign: "center",
     marginBottom: 4,
   },
   playerChapterTitle: {
     color: "#C8B896",
     fontSize: 18,
-    fontFamily: "Lora_600SemiBold",
+    fontFamily: "Literata_600SemiBold",
     textAlign: "center",
     marginBottom: 28,
   },
@@ -699,7 +699,7 @@ const styles = StyleSheet.create({
   timeText: {
     color: "#6A946A",
     fontSize: 13,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
   controls: {
     width: "100%",
@@ -737,12 +737,12 @@ const styles = StyleSheet.create({
   actionLabel: {
     color: "#6A946A",
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
   errorText: {
     color: "#E07A5F",
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     textAlign: "center",
     marginBottom: 12,
   },
@@ -788,13 +788,13 @@ const styles = StyleSheet.create({
   miniTitle: {
     color: "#E8F0E8",
     fontSize: 15,
-    fontFamily: "Lora_600SemiBold",
+    fontFamily: "Literata_600SemiBold",
     marginBottom: 1,
   },
   miniDay: {
     color: "#6A946A",
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
   miniPlayBtn: {
     width: 40,

@@ -4,17 +4,17 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
+import { useFonts } from "expo-font";
 import {
-  useFonts,
-  Lora_400Regular,
-  Lora_600SemiBold,
-  Lora_700Bold,
-} from "@expo-google-fonts/lora";
+  Literata_500Medium,
+  Literata_600SemiBold,
+  Literata_700Bold,
+} from "@expo-google-fonts/literata";
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-} from "@expo-google-fonts/inter";
+  DMSans_400Regular,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+} from "@expo-google-fonts/dm-sans";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { Colors } from "../constants/colors";
 
@@ -56,12 +56,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Lora_400Regular,
-    Lora_600SemiBold,
-    Lora_700Bold,
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
+    Literata_500Medium,
+    Literata_600SemiBold,
+    Literata_700Bold,
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
   });
 
   const onLayoutRootView = useCallback(async () => {

@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
   dotActive: { backgroundColor: Colors.accent.primary, width: 22 },
-  skip: { color: Colors.text.muted, fontSize: 14, width: 50, textAlign: "right", fontFamily: "Inter_400Regular" },
+  skip: { color: Colors.text.muted, fontSize: 14, width: 50, textAlign: "right", fontFamily: "DMSans_400Regular" },
   slide: {
     flex: 1,
     paddingHorizontal: 24,
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     marginBottom: 16,
     textAlign: "center",
-    fontFamily: "Lora_700Bold",
+    fontFamily: "Literata_700Bold",
   },
   slideBody: {
     color: Colors.text.muted,
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     maxWidth: 320,
     marginBottom: 32,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
   nextBtn: {
     backgroundColor: Colors.accent.primary,
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginTop: 16,
   },
-  nextBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600", fontFamily: "Inter_600SemiBold" },
+  nextBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "600", fontFamily: "DMSans_600SemiBold" },
   form: { width: "100%", maxWidth: 360 },
   input: {
     backgroundColor: Colors.bg.card,
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     marginBottom: 12,
     fontSize: 15,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
   cta: {
     backgroundColor: Colors.accent.primary,
@@ -250,12 +250,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   ctaDisabled: { opacity: 0.7 },
-  ctaText: { color: "#FFFFFF", fontWeight: "600", fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  ctaText: { color: "#FFFFFF", fontWeight: "600", fontSize: 15, fontFamily: "DMSans_600SemiBold" },
   toggle: {
     color: Colors.accent.light,
     fontSize: 14,
     textAlign: "center",
     marginTop: 16,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
 });

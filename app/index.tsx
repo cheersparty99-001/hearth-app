@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     lineHeight: 56,
     letterSpacing: -0.96,
     marginBottom: 8,
-    fontFamily: "Lora_700Bold",
+    fontFamily: "Literata_700Bold",
     textShadowColor: "rgba(255, 184, 118, 0.3)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
@@ -216,11 +216,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
     maxWidth: 280,
     opacity: 0.9,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
   subtitleAccent: {
     color: Colors.accent.light,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
   spacer: { flex: 1 },
   bottom: {
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   ctaText: {
     color: Colors.accent.onPrimary,
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     fontWeight: "700",
     letterSpacing: 0.7,
   },
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   anchorText: {
     color: Colors.text.secondary,
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     letterSpacing: 1.4,
     textTransform: "uppercase",
   },

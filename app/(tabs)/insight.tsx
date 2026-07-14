@@ -1,6 +1,6 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, Image } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -33,6 +33,8 @@ const BARS: { key: keyof Scores; label: string }[] = [
   { key: "sleep", label: "Sleep" },
 ];
 
+const QUOTE = "Growth isn't about fixing yourself — it's about understanding yourself.";
+
 function topOf(scores: Scores): WellnessDimension {
   return (Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0]) as WellnessDimension;
 }
@@ -50,6 +52,7 @@ export default function Insight() {
 
   const [profile, setProfile] = useState<ProfileView | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     // Fresh result passed via navigation params
@@ -167,8 +170,18 @@ export default function Insight() {
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <Text style={styles.eyebrow}>YOUR PROFILE</Text>
+          <Text style={styles.eyebrow}>YOUR INSIGHT</Text>
           <Text style={styles.name}>{profile.name}</Text>
+
+          {/* Archetype image */}
+          <View style={styles.archetypeWrap}>
+            <Image
+              source={require("../../assets/images/insight-img-2.png")}
+              style={styles.archetypeImg}
+              resizeMode="cover"
+            />
+          </View>
+
           <Text style={styles.primaryArea}>
             Primary area: {profile.dimensionLabel}
           </Text>
@@ -226,7 +239,17 @@ export default function Insight() {
             </>
           )}
 
-          {/* CTA */}
+          {/* Quote */}
+          <View style={styles.quoteBlock}>
+            <MaterialIcons
+              name="format-quote"
+              size={32}
+              color="rgba(200,129,58,0.4)"
+            />
+            <Text style={styles.quoteText}>"{QUOTE}"</Text>
+          </View>
+
+          {/* CTAs */}
           <Pressable
             style={styles.talkBtn}
             onPress={() => router.push("/(tabs)/chat")}
@@ -238,6 +261,18 @@ export default function Insight() {
               style={{ marginRight: 8 }}
             />
             <Text style={styles.talkBtnText}>Talk to Ember</Text>
+          </Pressable>
+
+          <Pressable style={styles.saveBtn} onPress={() => setSaved((s) => !s)}>
+            <MaterialIcons
+              name={saved ? "bookmark" : "bookmark-border"}
+              size={18}
+              color={Colors.accent.light}
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.saveBtnText}>
+              {saved ? "Saved" : "Save Insight"}
+            </Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -257,35 +292,57 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: "#C8813A",
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 1.5,
+    fontFamily: "DMSans_500Medium",
+    letterSpacing: 2,
+    textAlign: "center",
     marginBottom: 8,
   },
   name: {
     color: "#E8A855",
-    fontSize: 26,
-    lineHeight: 34,
-    fontFamily: "Lora_700Bold",
-    marginBottom: 6,
+    fontSize: 28,
+    lineHeight: 36,
+    fontFamily: "Literata_700Bold",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  archetypeWrap: {
+    alignSelf: "center",
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "rgba(200,129,58,0.5)",
+    marginBottom: 24,
+    shadowColor: "#C8813A",
+    shadowOpacity: 0.35,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 0 },
+  },
+  archetypeImg: {
+    width: "100%",
+    height: "100%",
   },
   primaryArea: {
     color: "#6A946A",
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
-    marginBottom: 20,
+    fontFamily: "DMSans_400Regular",
+    textAlign: "center",
+    marginBottom: 16,
   },
   description: {
     color: "#D4E8D4",
     fontSize: 15,
     lineHeight: 24,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
+    textAlign: "center",
     marginBottom: 32,
   },
 
   landscapeLabel: {
     color: "#6A946A",
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     letterSpacing: 1.5,
     marginBottom: 16,
   },
@@ -302,7 +359,7 @@ const styles = StyleSheet.create({
     width: 80,
     color: "#D4E8D4",
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
   barContainer: {
     flex: 1,
@@ -319,20 +376,21 @@ const styles = StyleSheet.create({
     width: 24,
     color: "#6A946A",
     fontSize: 12,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     textAlign: "right",
   },
 
   sectionLabel: {
     color: "#6A946A",
     fontSize: 11,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     letterSpacing: 1.5,
     marginBottom: 14,
   },
   strengthsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
+    justifyContent: "center",
     gap: 12,
     marginBottom: 32,
   },
@@ -347,7 +405,7 @@ const styles = StyleSheet.create({
   strengthText: {
     color: "#D4E8D4",
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
 
   growthCard: {
@@ -370,9 +428,22 @@ const styles = StyleSheet.create({
     color: "#D4E8D4",
     fontSize: 15,
     lineHeight: 24,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
 
+  quoteBlock: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  quoteText: {
+    color: "#E8F0E8",
+    fontSize: 18,
+    lineHeight: 28,
+    fontFamily: "Literata_600SemiBold",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginTop: 4,
+  },
   talkBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -380,6 +451,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#C8813A",
     borderRadius: 50,
     padding: 16,
+    marginBottom: 12,
     shadowColor: "#C8813A",
     shadowOpacity: 0.3,
     shadowRadius: 20,
@@ -388,7 +460,22 @@ const styles = StyleSheet.create({
   talkBtnText: {
     color: Colors.accent.onPrimary,
     fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "DMSans_600SemiBold",
+  },
+  saveBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#1E3A1E",
+    borderWidth: 1,
+    borderColor: "#6A946A",
+    borderRadius: 50,
+    padding: 16,
+  },
+  saveBtnText: {
+    color: Colors.accent.light,
+    fontSize: 16,
+    fontFamily: "DMSans_600SemiBold",
   },
 
   empty: {
@@ -401,7 +488,7 @@ const styles = StyleSheet.create({
   emptyTitle: {
     color: Colors.text.primary,
     fontSize: 22,
-    fontFamily: "Lora_600SemiBold",
+    fontFamily: "Literata_600SemiBold",
     marginBottom: 8,
   },
   emptyText: {
@@ -410,7 +497,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 24,
     maxWidth: 280,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     lineHeight: 22,
   },
 });

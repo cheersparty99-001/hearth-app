@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   ImageBackground,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -68,7 +69,10 @@ export default function Home() {
             <Text style={styles.brand}>Hearth</Text>
           </View>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={18} color={Colors.accent.light} />
+            <Image
+              source={require("../../assets/images/home-img-2.png")}
+              style={styles.avatarImg}
+            />
           </View>
         </View>
 
@@ -218,7 +222,7 @@ const styles = StyleSheet.create({
     color: Colors.accent.light,
     fontSize: 24,
     lineHeight: 32,
-    fontFamily: "Lora_700Bold",
+    fontFamily: "Literata_700Bold",
     letterSpacing: -0.5,
   },
   avatar: {
@@ -232,6 +236,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     overflow: "hidden",
   },
+  avatarImg: {
+    width: "100%",
+    height: "100%",
+  },
   content: {
     paddingHorizontal: 24,
     paddingTop: 16,
@@ -243,14 +251,14 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: 28,
     lineHeight: 36,
-    fontFamily: "Lora_600SemiBold",
+    fontFamily: "Literata_600SemiBold",
   },
   welcomeSub: {
     color: Colors.text.secondary,
     fontSize: 16,
     lineHeight: 24,
     marginTop: 4,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
   heroCard: {
     width: "100%",
@@ -276,7 +284,7 @@ const styles = StyleSheet.create({
     color: Colors.accent.light,
     fontSize: 14,
     lineHeight: 20,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     letterSpacing: 0.7,
   },
   sectionHeader: {
@@ -288,12 +296,12 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: 24,
     lineHeight: 32,
-    fontFamily: "Lora_600SemiBold",
+    fontFamily: "Literata_600SemiBold",
   },
   viewAll: {
     color: Colors.accent.light,
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     letterSpacing: 0.7,
   },
   glassCard: {
@@ -313,14 +321,14 @@ const styles = StyleSheet.create({
     color: Colors.accent.light,
     fontSize: 24,
     lineHeight: 32,
-    fontFamily: "Lora_600SemiBold",
+    fontFamily: "Literata_600SemiBold",
   },
   glassCardSub: {
     color: Colors.text.secondary,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 4,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
   progressLabelRow: {
     flexDirection: "row",
@@ -329,12 +337,12 @@ const styles = StyleSheet.create({
   progressLabel: {
     color: Colors.text.secondary,
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
   progressPct: {
     color: Colors.accent.light,
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
   progressBg: {
     height: 8,
@@ -370,7 +378,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
     fontStyle: "italic",
     textAlign: "center",
-    fontFamily: "Lora_600SemiBold",
+    fontFamily: "Literata_600SemiBold",
   },
   quoteDivider: {
     width: 48,
@@ -412,12 +420,12 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: 22,
     lineHeight: 28,
-    fontFamily: "Lora_600SemiBold",
+    fontFamily: "Literata_600SemiBold",
   },
   emberSub: {
     color: Colors.text.secondary,
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     marginTop: 2,
   },
 });

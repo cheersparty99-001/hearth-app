@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     color: Colors.accent.light,
     fontSize: 24,
     lineHeight: 32,
-    fontFamily: "Lora_700Bold",
+    fontFamily: "Literata_700Bold",
     letterSpacing: -0.5,
   },
   content: {
@@ -243,14 +243,14 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: 28,
     lineHeight: 36,
-    fontFamily: "Lora_700Bold",
+    fontFamily: "Literata_700Bold",
     letterSpacing: -0.5,
   },
   email: {
     color: Colors.text.secondary,
     fontSize: 14,
     marginTop: 4,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     opacity: 0.8,
   },
   sectionLabelRow: {
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     color: Colors.accent.light,
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     letterSpacing: 2,
     textTransform: "uppercase",
   },
@@ -290,12 +290,12 @@ const styles = StyleSheet.create({
     color: Colors.accent.light,
     fontSize: 28,
     lineHeight: 32,
-    fontFamily: "Lora_700Bold",
+    fontFamily: "Literata_700Bold",
   },
   statLabel: {
     color: Colors.text.secondary,
     fontSize: 12,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     letterSpacing: 0.6,
     textTransform: "uppercase",
   },
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: 24,
     lineHeight: 32,
-    fontFamily: "Lora_600SemiBold",
+    fontFamily: "Literata_600SemiBold",
   },
   menuCard: {
     backgroundColor: Colors.glassPanel,
@@ -330,12 +330,12 @@ const styles = StyleSheet.create({
   menuLabel: {
     color: Colors.text.primary,
     fontSize: 16,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
   menuTrailing: {
     color: Colors.text.secondary,
     fontSize: 14,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
   divider: {
     height: 1,
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     textAlign: "center",
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
   signOutBtn: {
     height: 56,
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   signOutText: {
     color: Colors.text.secondary,
     fontSize: 15,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     letterSpacing: 0.5,
   },
 });

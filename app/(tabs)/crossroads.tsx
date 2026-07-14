@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
   View,
@@ -8,10 +8,12 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
 import { Colors } from "../../constants/colors";
 import {
   QUESTIONS,
@@ -23,12 +25,23 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 
+type MaterialName = React.ComponentProps<typeof MaterialIcons>["name"];
+
+// Each choice maps to a wellness dimension (a/b/c/d) — give each a distinct icon.
+const CHOICE_ICON: Record<ChoiceId, MaterialName> = {
+  a: "eco",
+  b: "local-fire-department",
+  c: "forum",
+  d: "shield",
+};
+
 export default function Crossroads() {
   const router = useRouter();
   const { user } = useAuth();
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, ChoiceId>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const question = QUESTIONS[index];
   const selected = answers[question.id];
@@ -120,14 +133,19 @@ export default function Crossroads() {
               color={index === 0 ? Colors.text.muted : Colors.accent.light}
             />
           </Pressable>
-          <Text style={styles.headerTitle}>Wellness Profiler</Text>
-          <View style={{ width: 24 }} />
+          <Text style={styles.headerTitle}>
+            Scenario {index + 1} of {total}
+          </Text>
+          <Pressable onPress={() => setSaved((s) => !s)} hitSlop={10}>
+            <MaterialIcons
+              name={saved ? "bookmark" : "bookmark-border"}
+              size={22}
+              color={Colors.accent.light}
+            />
+          </Pressable>
         </View>
 
         <View style={styles.progressBlock}>
-          <Text style={styles.progressLabel}>
-            Question {index + 1} of {total}
-          </Text>
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
           </View>
@@ -137,6 +155,21 @@ export default function Crossroads() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
         >
+          {/* Forest hero */}
+          <View style={styles.hero}>
+            <Image
+              source={require("../../assets/images/crossroads-forest.png")}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={["transparent", "transparent", "rgba(13,26,13,0.95)"]}
+              locations={[0, 0.45, 1]}
+              style={StyleSheet.absoluteFill}
+            />
+          </View>
+
+          <Text style={styles.sceneLabel}>Life Scenario</Text>
           <Text style={styles.scenario}>{question.scenario}</Text>
 
           <View style={styles.choices}>
@@ -148,6 +181,13 @@ export default function Crossroads() {
                   style={[styles.choice, isSel && styles.choiceSelected]}
                   onPress={() => onSelect(c.id as ChoiceId)}
                 >
+                  <View style={[styles.iconBox, isSel && styles.iconBoxSelected]}>
+                    <MaterialIcons
+                      name={CHOICE_ICON[c.id as ChoiceId]}
+                      size={20}
+                      color={isSel ? Colors.accent.light : "#6A946A"}
+                    />
+                  </View>
                   <Text
                     style={[
                       styles.choiceText,
@@ -157,8 +197,8 @@ export default function Crossroads() {
                     {c.title}
                   </Text>
                   {isSel && (
-                    <Ionicons
-                      name="checkmark-circle"
+                    <MaterialIcons
+                      name="radio-button-checked"
                       size={20}
                       color={Colors.accent.light}
                     />
@@ -208,20 +248,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: Colors.text.primary,
-    fontSize: 20,
-    fontFamily: "Lora_600SemiBold",
+    fontSize: 18,
+    fontFamily: "Literata_600SemiBold",
   },
   progressBlock: {
     paddingHorizontal: 24,
-    paddingTop: 8,
-    paddingBottom: 20,
-    gap: 10,
-  },
-  progressLabel: {
-    color: Colors.text.muted,
-    fontSize: 13,
-    fontFamily: "Inter_500Medium",
-    letterSpacing: 0.5,
+    paddingTop: 4,
+    paddingBottom: 16,
   },
   progressTrack: {
     height: 6,
@@ -236,14 +269,30 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 24,
-    paddingTop: 8,
+    paddingTop: 4,
     paddingBottom: 140,
   },
+  hero: {
+    width: "100%",
+    height: 180,
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 20,
+    backgroundColor: "#1E3A1E",
+  },
+  sceneLabel: {
+    color: Colors.accent.light,
+    fontSize: 22,
+    fontFamily: "Literata_700Bold",
+    textAlign: "center",
+    marginBottom: 12,
+  },
   scenario: {
-    color: Colors.text.primary,
-    fontSize: 24,
-    lineHeight: 34,
-    fontFamily: "Lora_600SemiBold",
+    color: Colors.text.secondary,
+    fontSize: 17,
+    lineHeight: 26,
+    fontFamily: "DMSans_400Regular",
+    textAlign: "center",
     marginBottom: 28,
   },
   choices: {
@@ -254,12 +303,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "rgba(42, 74, 42, 0.7)",
     borderRadius: 14,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
+    gap: 14,
   },
   choiceSelected: {
     borderColor: Colors.accent.primary,
@@ -269,16 +317,27 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 0 },
   },
+  iconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: "rgba(42, 74, 42, 0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconBoxSelected: {
+    backgroundColor: "rgba(200, 129, 58, 0.25)",
+  },
   choiceText: {
     flex: 1,
     color: Colors.text.primary,
-    fontSize: 16,
-    lineHeight: 24,
-    fontFamily: "Inter_400Regular",
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: "DMSans_400Regular",
   },
   choiceTextSelected: {
     color: Colors.accent.light,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
   ctaWrap: {
     position: "absolute",
@@ -307,7 +366,7 @@ const styles = StyleSheet.create({
   ctaText: {
     color: Colors.accent.onPrimary,
     fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "DMSans_600SemiBold",
     letterSpacing: 0.5,
   },
 });

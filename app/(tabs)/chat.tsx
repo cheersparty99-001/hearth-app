@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   ScrollView,
+  Image,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -262,7 +263,10 @@ export default function Chat() {
               />
             </Pressable>
             <View style={styles.headerAvatar}>
-              <Ionicons name="person" size={14} color={Colors.accent.light} />
+              <Image
+                source={require("../../assets/images/ember-avatar.png")}
+                style={styles.headerAvatarImg}
+              />
             </View>
           </View>
         </View>
@@ -373,13 +377,13 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: 24,
     lineHeight: 28,
-    fontFamily: "Lora_600SemiBold",
+    fontFamily: "Literata_600SemiBold",
   },
   headerRole: {
     color: Colors.text.secondary,
     fontSize: 14,
     opacity: 0.8,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
   },
   headerRight: {
     flexDirection: "row",
@@ -395,6 +399,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg.elevated,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  headerAvatarImg: {
+    width: "100%",
+    height: "100%",
   },
   body: { flex: 1 },
   list: {
@@ -457,7 +466,7 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: 16,
     lineHeight: 24,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
   emberMeta: {
     flexDirection: "row",
@@ -475,7 +484,7 @@ const styles = StyleSheet.create({
   timestamp: {
     color: Colors.text.secondary,
     fontSize: 10,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
   },
   bottomArea: {
     paddingBottom: 8,
@@ -499,7 +508,7 @@ const styles = StyleSheet.create({
   quickLabel: {
     color: Colors.text.primary,
     fontSize: 14,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "DMSans_500Medium",
     letterSpacing: 0.7,
   },
   inputShell: {
@@ -526,7 +535,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: Colors.text.primary,
     fontSize: 16,
-    fontFamily: "Inter_400Regular",
+    fontFamily: "DMSans_400Regular",
     paddingVertical: 6,
     maxHeight: 120,
   },

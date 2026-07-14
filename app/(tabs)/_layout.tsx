@@ -41,7 +41,7 @@ export default function TabsLayout() {
         },
         tabBarLabelStyle: {
           fontSize: 11,
-          fontFamily: "Inter_500Medium",
+          fontFamily: "DMSans_500Medium",
           letterSpacing: 0.5,
           marginTop: 2,
         },
