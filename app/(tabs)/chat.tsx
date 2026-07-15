@@ -18,7 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/colors";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
-import { chatWithEmber } from "../../lib/claude";
+import { chatWithEmber, chatWithEmberStream } from "../../lib/claude";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -130,19 +130,35 @@ export default function Chat() {
         .then(() => undefined);
     }
 
-    try {
-      const history = [...messages, userMsg]
-        .filter((m) => m.id !== "welcome")
-        .map((m) => ({ role: m.role, content: m.content }));
-      const reply = await chatWithEmber(history);
+    const history = [...messages, userMsg]
+      .filter((m) => m.id !== "welcome")
+      .map((m) => ({ role: m.role, content: m.content }));
 
-      const emberMsg: Msg = {
-        id: `e-${Date.now()}`,
-        role: "assistant",
-        content: reply,
-        createdAt: new Date(),
-      };
-      setMessages((m) => [...m, emberMsg]);
+    // Add an empty assistant bubble that fills in as tokens stream.
+    const assistantId = `e-${Date.now()}`;
+    setMessages((m) => [
+      ...m,
+      { id: assistantId, role: "assistant", content: "", createdAt: new Date() },
+    ]);
+
+    const setAssistant = (content: string) =>
+      setMessages((m) =>
+        m.map((msg) => (msg.id === assistantId ? { ...msg, content } : msg))
+      );
+
+    try {
+      let acc = "";
+      let reply: string;
+      try {
+        reply = await chatWithEmberStream(history, (chunk) => {
+          acc += chunk;
+          setAssistant(acc);
+        });
+      } catch {
+        // Streaming failed — fall back to a single non-streamed reply.
+        reply = await chatWithEmber(history);
+      }
+      setAssistant(reply);
 
       if (user) {
         supabase
@@ -151,16 +167,9 @@ export default function Chat() {
           .then(() => undefined);
       }
     } catch (e: any) {
-      setMessages((m) => [
-        ...m,
-        {
-          id: `err-${Date.now()}`,
-          role: "assistant",
-          content:
-            "I'm having trouble hearing you right now. Take a breath, and try again in a moment.",
-          createdAt: new Date(),
-        },
-      ]);
+      setAssistant(
+        "I'm having trouble hearing you right now. Take a breath, and try again in a moment."
+      );
     } finally {
       setSending(false);
     }
@@ -192,20 +201,26 @@ export default function Chat() {
               focus && styles.bubbleEmberFocus,
             ]}
           >
-            <Text style={styles.bubbleText}>{item.content}</Text>
-            <View style={styles.emberMeta}>
-              {focus && (
-                <Ionicons
-                  name="heart"
-                  size={12}
-                  color={Colors.accent.light}
-                />
-              )}
-              <View style={{ flex: 1 }} />
-              <Text style={styles.timestamp}>
-                {formatTime(item.createdAt)}
-              </Text>
-            </View>
+            {item.content === "" ? (
+              <ActivityIndicator color={Colors.accent.light} />
+            ) : (
+              <>
+                <Text style={styles.bubbleText}>{item.content}</Text>
+                <View style={styles.emberMeta}>
+                  {focus && (
+                    <Ionicons
+                      name="heart"
+                      size={12}
+                      color={Colors.accent.light}
+                    />
+                  )}
+                  <View style={{ flex: 1 }} />
+                  <Text style={styles.timestamp}>
+                    {formatTime(item.createdAt)}
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
       );
@@ -282,22 +297,6 @@ export default function Chat() {
             keyExtractor={(m) => m.id}
             contentContainerStyle={styles.list}
             renderItem={renderItem}
-            ListFooterComponent={
-              sending ? (
-                <View style={styles.emberRow}>
-                  <View style={styles.emberAvatar}>
-                    <Ionicons
-                      name="flame"
-                      size={16}
-                      color={Colors.accent.light}
-                    />
-                  </View>
-                  <View style={styles.bubbleEmber}>
-                    <ActivityIndicator color={Colors.accent.light} />
-                  </View>
-                </View>
-              ) : null
-            }
           />
 
           <View style={styles.bottomArea}>

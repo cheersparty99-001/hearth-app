@@ -1,13 +1,12 @@
 // Supabase Edge Function: ember-chat
 // Proxies Anthropic so the API key NEVER ships in the mobile app bundle.
-// The key lives as a Supabase secret (ANTHROPIC_API_KEY), set via:
+// Set the key + deploy:
 //   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
-// Deploy with:
 //   supabase functions deploy ember-chat
 //
 // Request body:
-//   { "type": "chat",    "messages": [{role, content}, ...] }
-//   { "type": "insight", "answers":  [{question_id, choice}, ...] }
+//   { "type": "chat",    "messages": [...] }   -> streams plain-text deltas
+//   { "type": "insight", "answers":  [...] }   -> returns JSON
 
 const EMBER_SYSTEM_PROMPT = `
 You are Ember, a warm and grounded AI companion within the Hearth app.
@@ -35,10 +34,10 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-async function anthropic(payload: Record<string, unknown>): Promise<string> {
+function anthropicRequest(payload: Record<string, unknown>): Promise<Response> {
   const key = Deno.env.get("ANTHROPIC_API_KEY");
   if (!key) throw new Error("ANTHROPIC_API_KEY not configured");
-  const res = await fetch(ANTHROPIC_URL, {
+  return fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -47,11 +46,6 @@ async function anthropic(payload: Record<string, unknown>): Promise<string> {
     },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data?.error?.message ?? `Anthropic error ${res.status}`);
-  }
-  return data.content?.[0]?.text ?? "";
 }
 
 Deno.serve(async (req: Request) => {
@@ -61,8 +55,9 @@ Deno.serve(async (req: Request) => {
   try {
     const body = await req.json();
 
+    // ---- Insight: one-shot JSON ----
     if (body.type === "insight") {
-      const text = await anthropic({
+      const res = await anthropicRequest({
         model: MODEL,
         max_tokens: 400,
         messages: [
@@ -74,6 +69,8 @@ Return ONLY raw JSON, no markdown:
           },
         ],
       });
+      const data = await res.json();
+      const text = data?.content?.[0]?.text ?? "";
       try {
         return json(JSON.parse(text));
       } catch {
@@ -87,14 +84,59 @@ Return ONLY raw JSON, no markdown:
       }
     }
 
-    // default: chat
-    const text = await anthropic({
+    // ---- Chat: stream plain-text deltas ----
+    const upstream = await anthropicRequest({
       model: MODEL,
       max_tokens: 300,
       system: EMBER_SYSTEM_PROMPT,
       messages: body.messages ?? [],
+      stream: true,
     });
-    return json({ text });
+
+    if (!upstream.ok || !upstream.body) {
+      const err = await upstream.text();
+      return json({ error: `Anthropic error ${upstream.status}: ${err}` }, 502);
+    }
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = upstream.body!.getReader();
+        const decoder = new TextDecoder();
+        const encoder = new TextEncoder();
+        let buffer = "";
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() ?? "";
+            for (const line of lines) {
+              const t = line.trim();
+              if (!t.startsWith("data:")) continue;
+              const payload = t.slice(5).trim();
+              if (!payload || payload === "[DONE]") continue;
+              try {
+                const evt = JSON.parse(payload);
+                if (evt.type === "content_block_delta" && evt.delta?.text) {
+                  controller.enqueue(encoder.encode(evt.delta.text));
+                }
+              } catch {
+                // ignore non-JSON keepalive lines
+              }
+            }
+          }
+        } catch (e) {
+          controller.error(e);
+          return;
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(stream, {
+      headers: { ...CORS, "Content-Type": "text/plain; charset=utf-8" },
+    });
   } catch (e) {
     return json({ error: String((e as Error)?.message ?? e) }, 500);
   }
