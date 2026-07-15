@@ -25,7 +25,7 @@ const { width } = Dimensions.get("window");
 
 export default function Onboarding() {
   const router = useRouter();
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn, signUp, resetPassword, signInWithProvider } = useAuth();
   const scrollRef = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
   const [mode, setMode] = useState<"signup" | "signin">("signup");
@@ -78,6 +78,19 @@ export default function Onboarding() {
       Alert.alert("Sign in failed", error);
       return;
     }
+    router.replace("/(tabs)/home");
+  };
+
+  const onSocial = async (provider: "google" | "apple") => {
+    setSubmitting(true);
+    const { error } = await signInWithProvider(provider);
+    setSubmitting(false);
+    if (error) {
+      Alert.alert("Sign-in failed", error);
+      return;
+    }
+    // On success the auth listener updates the session; AuthGate routes in.
+    // Navigate explicitly too, in case we're already on an auth screen.
     router.replace("/(tabs)/home");
   };
 
@@ -193,6 +206,32 @@ export default function Onboarding() {
               )}
             </Pressable>
 
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or continue with</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {Platform.OS === "ios" && (
+              <Pressable
+                style={[styles.social, styles.socialApple]}
+                onPress={() => onSocial("apple")}
+                disabled={submitting}
+              >
+                <Ionicons name="logo-apple" size={20} color="#0D1A0D" />
+                <Text style={styles.socialAppleText}>Continue with Apple</Text>
+              </Pressable>
+            )}
+
+            <Pressable
+              style={[styles.social, styles.socialGoogle]}
+              onPress={() => onSocial("google")}
+              disabled={submitting}
+            >
+              <Ionicons name="logo-google" size={18} color="#E8F0E8" />
+              <Text style={styles.socialGoogleText}>Continue with Google</Text>
+            </Pressable>
+
             <Pressable
               onPress={() => setMode(mode === "signup" ? "signin" : "signup")}
             >
@@ -299,5 +338,49 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 12,
     fontFamily: "DMSans_400Regular",
+  },
+  dividerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    color: Colors.text.muted,
+    fontSize: 12,
+    fontFamily: "DMSans_400Regular",
+  },
+  social: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    height: 52,
+    borderRadius: 50,
+    marginBottom: 12,
+  },
+  socialApple: {
+    backgroundColor: "#E8F0E8",
+  },
+  socialAppleText: {
+    color: "#0D1A0D",
+    fontSize: 15,
+    fontFamily: "DMSans_600SemiBold",
+  },
+  socialGoogle: {
+    backgroundColor: "rgba(30, 58, 30, 0.6)",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  socialGoogleText: {
+    color: "#E8F0E8",
+    fontSize: 15,
+    fontFamily: "DMSans_600SemiBold",
   },
 });

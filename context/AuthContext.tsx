@@ -6,7 +6,19 @@ import React, {
   useState,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import * as WebBrowser from "expo-web-browser";
+import * as Linking from "expo-linking";
 import { supabase } from "../lib/supabase";
+
+WebBrowser.maybeCompleteAuthSession();
+
+type OAuthProvider = "google" | "apple";
+
+// Extract a query/fragment param from a redirect URL without URLSearchParams.
+function urlParam(url: string, key: string): string | undefined {
+  const m = url.match(new RegExp(`[?#&]${key}=([^&]+)`));
+  return m ? decodeURIComponent(m[1]) : undefined;
+}
 
 interface AuthState {
   session: Session | null;
@@ -18,6 +30,9 @@ interface AuthState {
     password: string
   ) => Promise<{ error: string | null; needsConfirmation: boolean }>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
+  signInWithProvider: (
+    provider: OAuthProvider
+  ) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -69,6 +84,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error?.message ?? null };
   };
 
+  const signInWithProvider = async (provider: OAuthProvider) => {
+    const redirectTo = Linking.createURL("auth-callback");
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo, skipBrowserRedirect: true },
+    });
+    if (error) return { error: error.message };
+    if (!data?.url) return { error: "Could not start sign-in." };
+
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    // User dismissed the browser — treat as a silent cancel, not an error.
+    if (result.type !== "success" || !result.url) return { error: null };
+
+    // PKCE flow returns ?code=...
+    const code = urlParam(result.url, "code");
+    if (code) {
+      const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
+      return { error: exErr?.message ?? null };
+    }
+    // Implicit flow returns tokens in the URL fragment.
+    const access_token = urlParam(result.url, "access_token");
+    const refresh_token = urlParam(result.url, "refresh_token");
+    if (access_token && refresh_token) {
+      const { error: sErr } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
+      return { error: sErr?.message ?? null };
+    }
+    return { error: "Sign-in did not complete." };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -81,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       signIn,
       signUp,
       resetPassword,
+      signInWithProvider,
       signOut,
     }),
     [session, loading]
