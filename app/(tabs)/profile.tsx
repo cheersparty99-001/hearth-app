@@ -8,7 +8,6 @@ import {
   Alert,
   Modal,
   TextInput,
-  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -19,10 +18,6 @@ import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
-
-// TODO: replace with your real hosted legal pages before store submission.
-const PRIVACY_URL = "https://hearth.app/privacy";
-const TERMS_URL = "https://hearth.app/terms";
 
 type StatItem = {
   value: number;
@@ -90,12 +85,6 @@ export default function Profile() {
     }
     setName(trimmed);
     setEditing(false);
-  };
-
-  const openUrl = async (url: string) => {
-    const ok = await Linking.canOpenURL(url);
-    if (ok) Linking.openURL(url);
-    else Alert.alert("Link unavailable", url);
   };
 
   const showAbout = () => {
@@ -180,13 +169,13 @@ export default function Profile() {
             <MenuRow
               icon="shield"
               label="Privacy Policy"
-              onPress={() => openUrl(PRIVACY_URL)}
+              onPress={() => router.push("/privacy")}
             />
             <Divider />
             <MenuRow
               icon="document-text-outline"
               label="Terms of Service"
-              onPress={() => openUrl(TERMS_URL)}
+              onPress={() => router.push("/terms")}
             />
             <Divider />
             <MenuRow icon="bulb" label="About Hearth" onPress={showAbout} />
