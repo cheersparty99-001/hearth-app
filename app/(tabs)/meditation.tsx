@@ -8,6 +8,7 @@ import {
   ImageBackground,
   Image,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Audio, AVPlaybackStatus } from "expo-av";
 import { LinearGradient } from "expo-linear-gradient";
@@ -76,6 +77,8 @@ export default function Meditation() {
 
   const soundRef = useRef<Audio.Sound | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sleepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sleepMinutes, setSleepMinutes] = useState<number | null>(null);
 
   useEffect(() => {
     console.log("[AUDIO] mount → setAudioModeAsync");
@@ -90,6 +93,7 @@ export default function Meditation() {
     return () => {
       console.log("[AUDIO] unmount → cleanup");
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (sleepTimerRef.current) clearTimeout(sleepTimerRef.current);
       soundRef.current
         ?.unloadAsync()
         .catch((e) => console.log("AUDIO ERROR (unmount unload):", e));
@@ -274,6 +278,57 @@ export default function Meditation() {
     setPlayerOpen(false);
   };
 
+  const onDownload = () => {
+    Alert.alert(
+      "Available offline",
+      "This session ships with the app, so it already plays without a connection."
+    );
+  };
+
+  const onPlaylist = () => {
+    Alert.alert("Playlists", "Saving sessions to playlists is coming soon.");
+  };
+
+  const setSleepTimer = (minutes: number | null) => {
+    if (sleepTimerRef.current) {
+      clearTimeout(sleepTimerRef.current);
+      sleepTimerRef.current = null;
+    }
+    setSleepMinutes(minutes);
+    if (minutes && minutes > 0) {
+      sleepTimerRef.current = setTimeout(() => {
+        soundRef.current?.pauseAsync().catch(() => undefined);
+        setIsPlaying(false);
+        setSleepMinutes(null);
+        sleepTimerRef.current = null;
+      }, minutes * 60 * 1000);
+    }
+  };
+
+  const onTimer = () => {
+    Alert.alert(
+      "Sleep timer",
+      sleepMinutes
+        ? `Playback will pause in about ${sleepMinutes} min.`
+        : "Pause playback after:",
+      [
+        { text: "5 minutes", onPress: () => setSleepTimer(5) },
+        { text: "10 minutes", onPress: () => setSleepTimer(10) },
+        { text: "30 minutes", onPress: () => setSleepTimer(30) },
+        ...(sleepMinutes
+          ? [
+              {
+                text: "Turn off",
+                style: "destructive" as const,
+                onPress: () => setSleepTimer(null),
+              },
+            ]
+          : []),
+        { text: "Cancel", style: "cancel" as const },
+      ]
+    );
+  };
+
   const progressRatio = duration > 0 ? position / duration : 0;
   const currentIndex = activeTrack
     ? TRACKS.findIndex((t) => t.id === activeTrack.id)
@@ -432,20 +487,31 @@ export default function Meditation() {
               </Pressable>
             </View>
 
-            {/* Bottom actions (visual placeholders) */}
+            {/* Bottom actions */}
             <View style={styles.actionRow}>
-              <View style={styles.actionItem}>
+              <Pressable style={styles.actionItem} onPress={onDownload}>
                 <Ionicons name="download-outline" size={24} color="#D4E8D4" />
                 <Text style={styles.actionLabel}>Download</Text>
-              </View>
-              <View style={styles.actionItem}>
+              </Pressable>
+              <Pressable style={styles.actionItem} onPress={onPlaylist}>
                 <Ionicons name="list" size={24} color="#D4E8D4" />
                 <Text style={styles.actionLabel}>Playlist</Text>
-              </View>
-              <View style={styles.actionItem}>
-                <Ionicons name="timer-outline" size={24} color="#D4E8D4" />
-                <Text style={styles.actionLabel}>Timer</Text>
-              </View>
+              </Pressable>
+              <Pressable style={styles.actionItem} onPress={onTimer}>
+                <Ionicons
+                  name="timer-outline"
+                  size={24}
+                  color={sleepMinutes ? "#C8813A" : "#D4E8D4"}
+                />
+                <Text
+                  style={[
+                    styles.actionLabel,
+                    sleepMinutes ? { color: "#C8813A" } : null,
+                  ]}
+                >
+                  {sleepMinutes ? `${sleepMinutes} min` : "Timer"}
+                </Text>
+              </Pressable>
             </View>
           </ScrollView>
         </SafeAreaView>
@@ -619,7 +685,7 @@ const styles = StyleSheet.create({
   playerContent: {
     paddingHorizontal: 28,
     paddingTop: 12,
-    paddingBottom: 32,
+    paddingBottom: 130,
     alignItems: "center",
   },
   artWrap: {
