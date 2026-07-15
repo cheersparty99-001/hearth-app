@@ -84,7 +84,7 @@ export default function Meditation() {
     console.log("[AUDIO] mount → setAudioModeAsync");
     Audio.setAudioModeAsync({
       playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
+      staysActiveInBackground: true,
       shouldDuckAndroid: true,
     })
       .then(() => console.log("[AUDIO] audio mode set OK"))

@@ -11,10 +11,14 @@
     "ios": {
       "supportsTablet": true,
       "backgroundColor": "#0D1A0D",
-      "bundleIdentifier": "com.hearth.app"
+      "bundleIdentifier": "com.hearth.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio"]
+      }
     },
     "android": {
       "package": "com.hearth.app",
+      "permissions": ["FOREGROUND_SERVICE", "WAKE_LOCK"],
       "adaptiveIcon": {
         "backgroundColor": "#0D1A0D",
         "foregroundImage": "./assets/android-icon-foreground.png",
