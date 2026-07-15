@@ -67,7 +67,7 @@ export default function SplashScreen() {
 
   useEffect(() => {
     if (!loading && session) {
-      const t = setTimeout(() => router.replace("/(tabs)/home"), 900);
+      const t = setTimeout(() => router.replace("/(tabs)/home"), 2000);
       return () => clearTimeout(t);
     }
   }, [loading, session, router]);
