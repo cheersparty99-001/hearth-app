@@ -10,7 +10,7 @@ import { config } from "./config";
 
 const FN_URL = `${config.supabaseUrl}/functions/v1/ember-chat`;
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "claude-sonnet-4-6";
 const DIRECT_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_KEY;
 
 const EMBER_SYSTEM_PROMPT = `

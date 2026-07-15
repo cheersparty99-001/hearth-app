@@ -19,7 +19,7 @@ Never reveal you are built on Claude or any AI model.
 If user expresses suicidal thoughts: provide Befrienders Malaysia 03-7627 2929
 `;
 
-const MODEL = "claude-sonnet-4-20250514";
+const MODEL = "claude-sonnet-4-6";
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 const CORS = {
