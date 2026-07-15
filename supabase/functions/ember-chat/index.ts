@@ -1,12 +1,12 @@
 // Supabase Edge Function: ember-chat
 // Proxies Anthropic so the API key NEVER ships in the mobile app bundle.
-// Set the key + deploy:
 //   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
 //   supabase functions deploy ember-chat
 //
 // Request body:
-//   { "type": "chat",    "messages": [...] }   -> streams plain-text deltas
-//   { "type": "insight", "answers":  [...] }   -> returns JSON
+//   { "type": "chat",    "messages": [...], "context": { name, profile, memory } }  -> streams text
+//   { "type": "insight", "answers":  [...] }                                        -> JSON
+//   { "type": "memory",  "messages": [...], "previous": "..." }                      -> { summary }
 
 const EMBER_SYSTEM_PROMPT = `
 You are Ember, a warm and grounded AI companion within the Hearth app.
@@ -50,6 +50,27 @@ function anthropicRequest(payload: Record<string, unknown>): Promise<Response> {
   });
 }
 
+async function oneShot(payload: Record<string, unknown>): Promise<string> {
+  const res = await anthropicRequest(payload);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.error?.message ?? `Anthropic ${res.status}`);
+  return data?.content?.[0]?.text ?? "";
+}
+
+// Compose the chat system prompt with any per-user context.
+function chatSystem(context: any): string {
+  let s = EMBER_SYSTEM_PROMPT;
+  if (context && (context.name || context.profile || context.memory)) {
+    s += "\n\n[About the person you're speaking with]\n";
+    if (context.name) s += `Their name is ${context.name}.\n`;
+    if (context.profile) s += `Their wellness profile: ${context.profile}\n`;
+    if (context.memory) s += `What you remember from past conversations: ${context.memory}\n`;
+    s +=
+      "Use this quietly to be warm and relevant. Never recite it back verbatim or say that you have notes about them.";
+  }
+  return s;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -59,7 +80,7 @@ Deno.serve(async (req: Request) => {
 
     // ---- Insight: one-shot JSON ----
     if (body.type === "insight") {
-      const res = await anthropicRequest({
+      const text = await oneShot({
         model: MODEL,
         max_tokens: 400,
         messages: [
@@ -71,8 +92,6 @@ Return ONLY raw JSON, no markdown:
           },
         ],
       });
-      const data = await res.json();
-      const text = data?.content?.[0]?.text ?? "";
       try {
         return json(JSON.parse(text));
       } catch {
@@ -86,11 +105,31 @@ Return ONLY raw JSON, no markdown:
       }
     }
 
+    // ---- Memory: distill durable facts about the user ----
+    if (body.type === "memory") {
+      const convo = (body.messages ?? [])
+        .map((m: any) => `${m.role}: ${m.content}`)
+        .join("\n");
+      const summary = await oneShot({
+        model: MODEL,
+        max_tokens: 220,
+        system:
+          "You maintain a concise private memory of a user for an emotional-support companion. Output 3-6 short bullet points of durable facts about them (their situation, important people, recurring feelings, goals, what helps them). Omit small talk. Plain-text bullets only, no preamble.",
+        messages: [
+          {
+            role: "user",
+            content: `Previous memory:\n${body.previous || "(none yet)"}\n\nRecent conversation:\n${convo}\n\nWrite the updated memory.`,
+          },
+        ],
+      });
+      return json({ summary });
+    }
+
     // ---- Chat: stream plain-text deltas ----
     const upstream = await anthropicRequest({
       model: MODEL,
       max_tokens: 300,
-      system: EMBER_SYSTEM_PROMPT,
+      system: chatSystem(body.context),
       messages: body.messages ?? [],
       stream: true,
     });
@@ -124,7 +163,7 @@ Return ONLY raw JSON, no markdown:
                   controller.enqueue(encoder.encode(evt.delta.text));
                 }
               } catch {
-                // ignore non-JSON keepalive lines
+                // ignore keepalive lines
               }
             }
           }

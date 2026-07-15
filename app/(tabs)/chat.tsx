@@ -18,7 +18,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/colors";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
-import { chatWithEmber, chatWithEmberStream } from "../../lib/claude";
+import {
+  chatWithEmber,
+  chatWithEmberStream,
+  updateMemory,
+  type EmberContext,
+} from "../../lib/claude";
 
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
@@ -80,17 +85,39 @@ export default function Chat() {
   const [sending, setSending] = useState(false);
   const listRef = useRef<FlatList<Msg>>(null);
 
+  // Per-user context Ember is given each turn (name + wellness profile + memory)
+  const contextRef = useRef<EmberContext>({});
+  const memoryRef = useRef<string>("");
+  const turnsRef = useRef(0);
+
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("chat_messages")
-        .select("id, role, content, created_at")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: true })
-        .limit(100);
-      if (data && data.length > 0) {
-        const loaded: Msg[] = data.map((d: any) => ({
+      const [{ data: prof }, { data: msgs }, { data: ins }, { data: mem }] =
+        await Promise.all([
+          supabase.from("profiles").select("name").eq("id", user.id).maybeSingle(),
+          supabase
+            .from("chat_messages")
+            .select("id, role, content, created_at")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: true })
+            .limit(30),
+          supabase
+            .from("insights")
+            .select("pattern_title, pattern_body, strengths, growth")
+            .eq("user_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from("user_memory")
+            .select("summary")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+        ]);
+
+      if (msgs && msgs.length > 0) {
+        const loaded: Msg[] = msgs.map((d: any) => ({
           id: d.id,
           role: d.role as "user" | "assistant",
           content: d.content,
@@ -98,6 +125,20 @@ export default function Chat() {
         }));
         setMessages([WELCOME, ...loaded]);
       }
+
+      const name = prof?.name || user.email?.split("@")[0] || "";
+      let profile = "";
+      if (ins) {
+        const strengths = Array.isArray(ins.strengths)
+          ? (ins.strengths as string[]).join(", ")
+          : "";
+        profile = `${ins.pattern_title ?? ""}: ${ins.pattern_body ?? ""}`.trim();
+        if (strengths) profile += ` Strengths: ${strengths}.`;
+        if (ins.growth) profile += ` Growth focus: ${ins.growth}`;
+      }
+      const memory = mem?.summary ?? "";
+      memoryRef.current = memory;
+      contextRef.current = { name, profile, memory };
     })();
   }, [user]);
 
@@ -150,13 +191,17 @@ export default function Chat() {
       let acc = "";
       let reply: string;
       try {
-        reply = await chatWithEmberStream(history, (chunk) => {
-          acc += chunk;
-          setAssistant(acc);
-        });
+        reply = await chatWithEmberStream(
+          history,
+          (chunk) => {
+            acc += chunk;
+            setAssistant(acc);
+          },
+          contextRef.current
+        );
       } catch {
         // Streaming failed — fall back to a single non-streamed reply.
-        reply = await chatWithEmber(history);
+        reply = await chatWithEmber(history, contextRef.current);
       }
       setAssistant(reply);
 
@@ -165,6 +210,29 @@ export default function Chat() {
           .from("chat_messages")
           .insert({ user_id: user.id, role: "assistant", content: reply })
           .then(() => undefined);
+
+        // Every few turns, distill durable facts into long-term memory.
+        turnsRef.current += 1;
+        if (turnsRef.current >= 4) {
+          turnsRef.current = 0;
+          const recent = [...history, { role: "assistant" as const, content: reply }].slice(-12);
+          updateMemory(recent, memoryRef.current)
+            .then((summary) => {
+              if (summary && summary !== memoryRef.current) {
+                memoryRef.current = summary;
+                contextRef.current = { ...contextRef.current, memory: summary };
+                supabase
+                  .from("user_memory")
+                  .upsert({
+                    user_id: user.id,
+                    summary,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .then(() => undefined);
+              }
+            })
+            .catch(() => undefined);
+        }
       }
     } catch (e: any) {
       setAssistant(

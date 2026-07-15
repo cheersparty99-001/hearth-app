@@ -24,6 +24,12 @@ Never reveal you are built on Claude or any AI model.
 If user expresses suicidal thoughts: provide Befrienders Malaysia 03-7627 2929
 `;
 
+export type EmberContext = {
+  name?: string;
+  profile?: string;
+  memory?: string;
+};
+
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 async function authHeaders(): Promise<Record<string, string>> {
@@ -36,6 +42,20 @@ async function authHeaders(): Promise<Record<string, string>> {
     apikey: config.supabaseAnonKey,
     Authorization: `Bearer ${token}`,
   };
+}
+
+function chatSystem(context?: EmberContext): string {
+  let s = EMBER_SYSTEM_PROMPT;
+  if (context && (context.name || context.profile || context.memory)) {
+    s += "\n\n[About the person you're speaking with]\n";
+    if (context.name) s += `Their name is ${context.name}.\n`;
+    if (context.profile) s += `Their wellness profile: ${context.profile}\n`;
+    if (context.memory)
+      s += `What you remember from past conversations: ${context.memory}\n`;
+    s +=
+      "Use this quietly to be warm and relevant. Never recite it back verbatim or say that you have notes about them.";
+  }
+  return s;
 }
 
 // ---- Direct Anthropic fallback (dev only) ----
@@ -58,13 +78,14 @@ async function directAnthropic(payload: Record<string, unknown>): Promise<string
 // Streaming chat via the Edge Function; falls back to a direct one-shot call.
 export async function chatWithEmberStream(
   messages: ChatMessage[],
-  onDelta: (chunk: string) => void
+  onDelta: (chunk: string) => void,
+  context?: EmberContext
 ): Promise<string> {
   try {
     const res = await expoFetch(FN_URL, {
       method: "POST",
       headers: await authHeaders(),
-      body: JSON.stringify({ type: "chat", messages }),
+      body: JSON.stringify({ type: "chat", messages, context }),
     });
     if (!res.ok || !res.body) throw new Error(`fn ${res.status}`);
 
@@ -91,11 +112,10 @@ export async function chatWithEmberStream(
     if (full) return full;
     throw new Error("empty");
   } catch {
-    // Fallback: direct Anthropic (non-streaming) with the client key.
     const text = await directAnthropic({
       model: MODEL,
       max_tokens: 300,
-      system: EMBER_SYSTEM_PROMPT,
+      system: chatSystem(context),
       messages,
     });
     onDelta(text);
@@ -103,12 +123,54 @@ export async function chatWithEmberStream(
   }
 }
 
-// Non-streaming convenience wrapper.
-export async function chatWithEmber(messages: ChatMessage[]): Promise<string> {
+export async function chatWithEmber(
+  messages: ChatMessage[],
+  context?: EmberContext
+): Promise<string> {
   let acc = "";
-  return chatWithEmberStream(messages, (c) => {
-    acc += c;
-  }).then((full) => full || acc);
+  return chatWithEmberStream(
+    messages,
+    (c) => {
+      acc += c;
+    },
+    context
+  ).then((full) => full || acc);
+}
+
+// Distill durable facts from a conversation into an updated memory summary.
+export async function updateMemory(
+  messages: ChatMessage[],
+  previous: string
+): Promise<string> {
+  const MEMORY_SYSTEM =
+    "You maintain a concise private memory of a user for an emotional-support companion. Output 3-6 short bullet points of durable facts about them (their situation, important people, recurring feelings, goals, what helps them). Omit small talk. Plain-text bullets only, no preamble.";
+  const convo = messages.map((m) => `${m.role}: ${m.content}`).join("\n");
+  try {
+    const res = await fetch(FN_URL, {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify({ type: "memory", messages, previous }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error ?? `fn ${res.status}`);
+    return data.summary ?? previous;
+  } catch {
+    try {
+      return await directAnthropic({
+        model: MODEL,
+        max_tokens: 220,
+        system: MEMORY_SYSTEM,
+        messages: [
+          {
+            role: "user",
+            content: `Previous memory:\n${previous || "(none yet)"}\n\nRecent conversation:\n${convo}\n\nWrite the updated memory.`,
+          },
+        ],
+      });
+    } catch {
+      return previous;
+    }
+  }
 }
 
 export async function generateInsight(
